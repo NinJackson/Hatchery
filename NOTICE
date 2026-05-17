@@ -1,0 +1,15 @@
+Hatchery
+Copyright (c) 2026 NinJackson
+
+This product is licensed under the MIT License (see LICENSE).
+
+Trademarks & disclaimer
+-----------------------
+This is an independent, fan-made plugin. It is not affiliated with, sponsored
+by, or endorsed by Mojang, Microsoft, or the Pixelmon Mod / Pixelmon Modding
+Group. "Minecraft" is a trademark of Mojang/Microsoft; "Pixelmon" and "Pokémon"
+are trademarks of their respective owners.
+
+This repository does NOT include or redistribute Pixelmon, the Minecraft
+client/server, or any Mojang/Pixelmon code or assets. The jars under libs/ are
+compile-only dependencies you must supply yourself (see libs/README.md).

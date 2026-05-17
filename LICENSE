@@ -19,11 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-This project is an independent, fan-made plugin. It is not affiliated with or
-endorsed by Mojang, Microsoft, or the Pixelmon Mod / Pixelmon Modding Group.
-"Pixelmon" and "Pokémon" are trademarks of their respective owners. Pixelmon
-and Minecraft server libraries are NOT included in this repository; you must
-supply them yourself to build (see libs/README.md).
