@@ -33,6 +33,21 @@ behavioural lever is exposed through YAML.
 
 ---
 
+## Documentation
+
+Full docs live in two places (same content):
+
+- 📖 **[Wiki](../../wiki)** — browsable, cross-linked.
+- 📁 **[`docs/wiki/`](docs/wiki/)** — in-repo mirror (always available), plus
+  the player-facing **[`docs/PLAYER_GUIDE.md`](docs/PLAYER_GUIDE.md)**.
+
+Start at **[Installation](docs/wiki/Installation.md)** ·
+**[Configuration](docs/wiki/Configuration.md)** ·
+**[Breeding Mechanics](docs/wiki/Breeding-Mechanics.md)** ·
+**[Environment Points](docs/wiki/Environment-Points.md)**.
+
+---
+
 ## Features
 
 - **Day Care breeding blocks** — register a breeding station by placing any
