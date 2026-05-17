@@ -1,0 +1,75 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'gg.hatchery'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+    maven { url = 'https://oss.sonatype.org/content/repositories/snapshots' }
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+    maven { url = 'https://repo.extendedclip.com/content/repositories/placeholderapi/' }
+    maven { url = 'https://maven.izzel.io/releases/' }
+    maven { url = 'https://maven.minecraftforge.net/' }
+    maven { url = 'https://libraries.minecraft.net/' }
+    maven { url = 'https://jitpack.io' }
+}
+
+dependencies {
+    compileOnly 'org.spigotmc:spigot-api:1.20.2-R0.1-SNAPSHOT'
+
+    // Pixelmon — drop the jar into ./libs and adjust filename if needed
+    compileOnly files('libs/Pixelmon-1.20.2-9.2.10.jar')
+
+    // Vanilla Minecraft NMS available transitively for class resolution.
+    // We avoid direct NMS method calls; sprite/CraftItemStack routing is via reflection.
+    compileOnly files('libs/minecraft-server-1.20.2-srg.jar')
+
+    // LuckPerms API (soft-dep)
+    compileOnly 'net.luckperms:api:5.4'
+
+    // PlaceholderAPI (soft-dep)
+    compileOnly 'me.clip:placeholderapi:2.11.6'
+
+    // Storage backends bundled
+    implementation 'org.xerial:sqlite-jdbc:3.45.1.0'
+    implementation 'com.mysql:mysql-connector-j:8.3.0'
+    implementation 'com.zaxxer:HikariCP:5.1.0'
+
+    implementation 'org.slf4j:slf4j-nop:2.0.12'
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('plugin.yml') {
+        expand version: project.version
+    }
+}
+
+shadowJar {
+    archiveClassifier.set('')
+    minimize {
+        exclude(dependency('org.xerial:sqlite-jdbc:.*'))
+        exclude(dependency('com.mysql:mysql-connector-j:.*'))
+    }
+    relocate 'com.zaxxer.hikari', 'gg.hatchery.libs.hikari'
+    relocate 'org.slf4j', 'gg.hatchery.libs.slf4j'
+}
+
+build {
+    dependsOn shadowJar
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked'
+}

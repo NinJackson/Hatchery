@@ -1,0 +1,30 @@
+# --- Build output ---
+/build/
+/.gradle/
+out/
+bin/
+
+# --- Proprietary / non-redistributable libs (supply locally to build) ---
+# Pixelmon and the Minecraft server jar are NOT open source and must never
+# be committed. See libs/README.md for how to obtain them.
+/libs/*.jar
+
+# --- Java ---
+*.class
+
+# --- IDE ---
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Local gradle bundle (PLAN uses a vendored gradle-8.7) ---
+/gradle-*/

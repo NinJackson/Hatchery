@@ -1,0 +1,80 @@
+# =========================================================================
+# Hatchery — Classic Pixelmon Day Care breeding
+# =========================================================================
+
+storage:
+  type: sqlite          # sqlite | mysql
+  file: data.db
+  mysql:
+    host: 127.0.0.1
+    port: 3306
+    database: hatchery
+    user: hatchery
+    password: changeme
+
+breeding:
+  tick-interval-seconds: 60
+  base-points-needed: 100
+  max-eggs-per-daycare: 1
+
+daycare:
+  # Pixelmon 9.0.7+ replaced ranch blocks with Day Care blocks.
+  # "block" is kept for backwards-compatible single-block configs.
+  block: pixelmon:white_day_care
+  blocks:
+    - pixelmon:black_day_care
+    - pixelmon:blue_day_care
+    - pixelmon:brown_day_care
+    - pixelmon:cyan_day_care
+    - pixelmon:gray_day_care
+    - pixelmon:green_day_care
+    - pixelmon:light_blue_day_care
+    - pixelmon:light_gray_day_care
+    - pixelmon:lime_day_care
+    - pixelmon:magenta_day_care
+    - pixelmon:orange_day_care
+    - pixelmon:pink_day_care
+    - pixelmon:purple_day_care
+    - pixelmon:red_day_care
+    - pixelmon:white_day_care
+    - pixelmon:yellow_day_care
+  max-per-player-default: 1
+  permission-meta-key: hatchery.maxdaycares       # LuckPerms meta key for per-player override
+  base-scan-radius: 5
+
+  upgrade:
+    item: minecraft:diamond_block
+    display-name: "&b&lDaycare Environment Upgrade"
+    lore:
+      - "&7Right-click your daycare to apply."
+      - "&7Expands the scan radius by &b{radius-per-level} &7blocks."
+      - "&7Maximum upgrades: &b{max-upgrades}"
+    radius-per-level: 2
+    max-upgrades: 5
+    drop-on-break: true
+
+worlds:
+  blacklisted:
+    - adventure
+    - build
+  use-vanilla-pixelmon: []                         # worlds that fall back to Pixelmon's own breeding
+
+satisfaction-levels:
+  - { threshold: 0,   name: "Unhappy",  color: "&c", speed-mult: 0.5 }
+  - { threshold: 25,  name: "Content",  color: "&e", speed-mult: 1.0 }
+  - { threshold: 50,  name: "Happy",    color: "&a", speed-mult: 1.5 }
+  - { threshold: 75,  name: "Ecstatic", color: "&b", speed-mult: 2.0 }
+  - { threshold: 100, name: "Blissful", color: "&d", speed-mult: 3.0 }
+
+particles:
+  during-breeding:
+    enabled: true
+    type: HEART
+    count: 3
+    interval-seconds: 5
+    offset: { x: 0.5, y: 1.0, z: 0.5 }
+  egg-ready:
+    enabled: true
+    type: VILLAGER_HAPPY
+    count: 10
+    interval-seconds: 2

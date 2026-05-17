@@ -1,0 +1,35 @@
+name: Hatchery
+version: '${version}'
+main: gg.hatchery.Hatchery
+api-version: '1.20'
+description: Classic Pixelmon Day Care breeding system, fully configurable.
+softdepend: [Pixelmon, LuckPerms, PlaceholderAPI]
+load: POSTWORLD
+
+commands:
+  daycares:
+    description: Open your daycare list / GUI
+    aliases: [dc]
+    usage: /daycares
+  hatchery:
+    description: Hatchery admin command
+    aliases: [osb, oldschoolbreeding]
+    permission: hatchery.admin
+    usage: /hatchery <reload|list|give-hourglass|give-upgrade|force-egg|remove>
+
+permissions:
+  hatchery.admin:
+    description: Full admin access to Hatchery
+    default: op
+  hatchery.use:
+    description: Use daycares
+    default: true
+  hatchery.hourglass.bronze:
+    description: Use bronze hourglasses
+    default: true
+  hatchery.hourglass.silver:
+    description: Use silver hourglasses
+    default: true
+  hatchery.hourglass.gold:
+    description: Use gold hourglasses
+    default: true

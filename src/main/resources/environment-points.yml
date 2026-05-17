@@ -1,0 +1,81 @@
+# Block points per Pokemon type.
+# Block IDs are namespaced and case-insensitive (e.g. "minecraft:grass_block", "pixelmon:apricorn_log").
+
+type-points:
+  normal:
+    minecraft:grass_block: 1
+    minecraft:dirt: 1
+  fire:
+    minecraft:netherrack: 2
+    minecraft:magma_block: 3
+    minecraft:lava: 4
+    minecraft:fire: 5
+    minecraft:soul_fire: 4
+  water:
+    minecraft:water: 2
+    minecraft:kelp: 1
+    minecraft:seagrass: 1
+    minecraft:prismarine: 2
+    minecraft:coral_block: 2
+  grass:
+    minecraft:grass_block: 2
+    minecraft:tall_grass: 1
+    minecraft:oak_leaves: 1
+    minecraft:birch_leaves: 1
+    minecraft:dark_oak_leaves: 1
+    minecraft:spruce_leaves: 1
+    pixelmon:apricorn_log: 3
+  electric:
+    minecraft:lightning_rod: 5
+    minecraft:redstone_block: 2
+    minecraft:copper_block: 2
+  ice:
+    minecraft:ice: 2
+    minecraft:packed_ice: 3
+    minecraft:blue_ice: 4
+    minecraft:snow_block: 1
+  fighting:
+    minecraft:cobblestone: 1
+    minecraft:bricks: 1
+  poison:
+    minecraft:mushroom_stem: 2
+    minecraft:brown_mushroom_block: 2
+    minecraft:red_mushroom_block: 2
+  ground:
+    minecraft:sand: 2
+    minecraft:dirt: 1
+    minecraft:gravel: 1
+  flying:
+    minecraft:white_wool: 1
+    minecraft:feather: 0
+  psychic:
+    minecraft:amethyst_block: 3
+    minecraft:end_stone: 2
+  bug:
+    minecraft:oak_log: 1
+    minecraft:honey_block: 3
+  rock:
+    minecraft:stone: 1
+    minecraft:cobblestone: 1
+    minecraft:granite: 1
+    minecraft:andesite: 1
+    minecraft:diorite: 1
+  ghost:
+    minecraft:soul_sand: 3
+    minecraft:soul_soil: 3
+  dragon:
+    minecraft:dragon_head: 5
+    minecraft:end_stone: 1
+  dark:
+    minecraft:blackstone: 2
+    minecraft:obsidian: 2
+  steel:
+    minecraft:iron_block: 2
+    minecraft:anvil: 2
+  fairy:
+    minecraft:pink_wool: 2
+    minecraft:flowering_azalea: 2
+
+universal-bonuses:
+  pixelmon:fossil_machine_top: 2
+  minecraft:flower_pot: 1

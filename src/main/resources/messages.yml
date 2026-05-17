@@ -1,0 +1,31 @@
+# All player-facing strings. Admin command output is hard-coded.
+# Color codes: '&' (translated to §).
+# Placeholders use {name} syntax — provided per-message by the plugin.
+
+prefix: "&8[&bHatchery&8] &7"
+
+daycare:
+  placed: "&aYour daycare has been registered!"
+  removed: "&cDaycare removed."
+  max-reached: "&cYou have reached your daycare limit (&f{max}&c)."
+  disabled-world: "&cDaycares are disabled in this world."
+
+breeding:
+  egg-ready: "&aAn egg is ready at &f{world} ({x}, {y}, {z})&a!"
+  egg-collected: "&aEgg collected! Species: &f{species}"
+  pair-incompatible: "&cThese Pokemon are not compatible."
+  satisfaction-changed: "&7Satisfaction: {color}{level} &7({points})"
+
+hourglass:
+  used: "&aBreeding advanced by &f{ticks} ticks&a!"
+  no-active-breeding: "&cThis daycare has no active breeding pair."
+
+upgrade:
+  applied: "&aDaycare upgraded! Radius: &f{radius}&a blocks."
+  max-reached: "&cThis daycare is fully upgraded."
+
+gui:
+  title: "&8Daycare"
+  add-pokemon: "&aAdd Pokemon"
+  view-environment: "&bView Environment Points"
+  collect-egg: "&aCollect Egg"

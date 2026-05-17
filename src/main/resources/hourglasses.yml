@@ -1,0 +1,30 @@
+# Custom hourglass tiers that advance breeding ticks when right-clicked on a daycare.
+# All hourglass tiers share the same base item but are distinguished by NBT/display.
+
+hourglasses:
+  bronze:
+    base-item: pixelmon:hourglass
+    display-name: "&6Bronze Hourglass"
+    lore:
+      - "&7Advances breeding by &e10 ticks"
+    ticks-added: 10
+    consume: true
+    permission: hatchery.hourglass.bronze
+
+  silver:
+    base-item: pixelmon:hourglass
+    display-name: "&7Silver Hourglass"
+    lore:
+      - "&7Advances breeding by &e25 ticks"
+    ticks-added: 25
+    consume: true
+    permission: hatchery.hourglass.silver
+
+  gold:
+    base-item: pixelmon:hourglass
+    display-name: "&eGold Hourglass"
+    lore:
+      - "&7Advances breeding by &e50 ticks"
+    ticks-added: 50
+    consume: true
+    permission: hatchery.hourglass.gold
