@@ -9,7 +9,9 @@ import org.bukkit.Bukkit;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.lang.reflect.Method;
 import java.util.Base64;
@@ -28,7 +30,7 @@ public final class PokemonNbtCodec {
             writePokemonNbt(p, tag);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try (DataOutputStream out = new DataOutputStream(baos)) {
-                NbtIo.m_128941_(tag, out);
+                writeTag(tag, out);
             }
             return Base64.getEncoder().encodeToString(baos.toByteArray());
         } catch (Throwable e) {
@@ -42,7 +44,7 @@ public final class PokemonNbtCodec {
             byte[] bytes = Base64.getDecoder().decode(s);
             CompoundTag tag;
             try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(bytes))) {
-                tag = NbtIo.m_128934_(in, NbtAccounter.m_301669_());
+                tag = readTag(in);
             }
             return createPokemon(tag);
         } catch (Throwable e) {
@@ -85,6 +87,39 @@ public final class PokemonNbtCodec {
 
     private static Class<?> providerClass() throws ClassNotFoundException {
         return Class.forName("net.minecraft.core.HolderLookup$Provider");
+    }
+
+    private static void writeTag(CompoundTag tag, DataOutput out) throws ReflectiveOperationException {
+        try {
+            NbtIo.class.getMethod("write", CompoundTag.class, DataOutput.class).invoke(null, tag, out);
+            return;
+        } catch (NoSuchMethodException ignored) {
+        }
+        NbtIo.class.getMethod("m_128941_", CompoundTag.class, DataOutput.class).invoke(null, tag, out);
+    }
+
+    private static CompoundTag readTag(DataInput in) throws ReflectiveOperationException {
+        try {
+            return (CompoundTag) NbtIo.class.getMethod("read", DataInput.class).invoke(null, in);
+        } catch (NoSuchMethodException ignored) {
+        }
+        try {
+            Method method = NbtIo.class.getMethod("read", DataInput.class, NbtAccounter.class);
+            return (CompoundTag) method.invoke(null, in, nbtAccounter());
+        } catch (NoSuchMethodException ignored) {
+        }
+        Method method = NbtIo.class.getMethod("m_128934_", DataInput.class, NbtAccounter.class);
+        return (CompoundTag) method.invoke(null, in, nbtAccounter());
+    }
+
+    private static Object nbtAccounter() throws ReflectiveOperationException {
+        for (String method : new String[]{"unlimitedHeap", "m_301669_"}) {
+            try {
+                return NbtAccounter.class.getMethod(method).invoke(null);
+            } catch (NoSuchMethodException ignored) {
+            }
+        }
+        throw new NoSuchMethodException("No NbtAccounter factory found");
     }
 
     private static Object registryProvider() throws ReflectiveOperationException {
