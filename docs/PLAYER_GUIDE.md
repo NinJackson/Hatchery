@@ -2,8 +2,8 @@
 
 Welcome to **OldSchool breeding**! This is the classic, ranch-style Pixelmon
 breeding loop: set up a Day Care, give it a good home, and hatch eggs the
-way it used to be. This guide is everything a player needs — no commands or
-config knowledge required.
+way it used to be. This shorter guide is kept for old links; the canonical
+player manual is **[docs/PLAYER-GUIDE.md](./PLAYER-GUIDE.md)**.
 
 ---
 
@@ -29,6 +29,12 @@ from your party. They must be **compatible**:
 
 If they don't match you'll see *"These Pokémon are not compatible."* Swap one
 out and try again.
+
+Parents are removed from your party when placed into Hatchery. The current
+1.21.1 build verifies Pixelmon's party storage before accepting the placement,
+so a parent should not remain in both your party and the daycare. If an older
+record already has that stale state, retrieving the parent clears the daycare
+copy instead of duplicating it.
 
 ## 3. Build a good environment
 
@@ -66,7 +72,8 @@ surroundings to climb tiers.
 
 When progress fills up you'll get *"An egg is ready!"*. Right-click the Day
 Care and hit **Collect Egg** — the egg goes to you, ready to hatch the normal
-Pixelmon way (walk it / use it per your server's hatching rules).
+Pixelmon way (walk it / use it per your server's hatching rules). Hatchery
+clears held items from generated eggs so parent-held items cannot be cloned.
 
 ## 6. Speed boosts
 

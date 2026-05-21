@@ -81,8 +81,12 @@ players can open the menu read-only — their clicks are rejected with a message
 > "Empty Slot" placeholder.
 
 To **retrieve** a parent later: shift-click that slot in the daycare menu. The
-Pokémon returns to your party (if there's space; otherwise you get
+Pokemon returns to your party (if there's space; otherwise you get
 `Your party is full.`).
+
+If the same Pokemon is already in your party because it was stored by an older
+buggy build, Hatchery clears the daycare copy instead of adding a second copy.
+You'll see: `That Pokemon was already in your party, so the daycare copy was cleared.`
 
 ## Compatibility rules
 
@@ -201,6 +205,8 @@ When the Status panel shows `Eggs ready: 1+`:
 1. The green **Collect Egg** button appears in slot 4 of the daycare menu.
 2. Click it.
 3. The egg is materialised as a Pixelmon egg item and placed in your party.
+   Hatchery clears held items from generated eggs, so a parent-held item cannot
+   be copied onto the egg.
 
 Failure modes:
 

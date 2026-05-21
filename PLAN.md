@@ -1,5 +1,10 @@
 # Hatchery — Custom Classic-Breeding Plugin
 
+> Historical planning document. This was written for the original 1.20.2 /
+> Pixelmon 9.2.x implementation. The current maintained server line is 1.21.1 /
+> Pixelmon 9.3.x; see `README.md` and `docs/` for live build and operations
+> guidance.
+
 > A Bukkit plugin running on Arclight (1.20.2) that recreates Pixelmon's pre-modern
 > ranch-style breeding system on top of modern Pixelmon Day Care blocks, with full
 > configurability for every mechanic.

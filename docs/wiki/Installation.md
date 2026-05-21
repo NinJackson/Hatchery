@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| Server | **Arclight 1.20.2** (Forge + Bukkit hybrid). Pixelmon requires Forge/Arclight. |
-| Java | **17** |
-| Pixelmon | **9.2.x** (built against 1.20.2 / 9.2.10) |
+| Server | **Arclight 1.21.1** (Forge + Bukkit hybrid). Pixelmon requires Forge/Arclight. |
+| Java | **21** for the 1.21.1 server line |
+| Pixelmon | **9.3.x** (tested on 9.3.16) |
 | Soft-deps | LuckPerms (per-player daycare caps via meta), PlaceholderAPI |
 
 ## Steps
@@ -16,7 +16,8 @@
 3. Start the server once — Hatchery generates its config in `plugins/Hatchery/`:
    - `config.yml`, `environment-points.yml`, `hourglasses.yml`, `messages.yml`
 4. Edit configs to taste (see [Configuration](Configuration)).
-5. Apply changes with `/hatchery reload`.
+5. Apply changes with `/hatchery reload`. Restart only when changing storage
+   backend or replacing the plugin jar.
 
 ## Giving players Day Care blocks
 

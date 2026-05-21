@@ -2,8 +2,9 @@
 
 ## Toolchain
 
-- **Java 17**
 - **Gradle 8.7** + the Shadow plugin (configured in `build.gradle`)
+- A local JDK that can run Gradle. The project currently compiles Java 17
+  bytecode, while the 1.21.1 server runtime itself should run on Java 21.
 - A Gradle wrapper is **not** committed; use a local Gradle 8.7 (or add a
   wrapper with `gradle wrapper`).
 
@@ -14,8 +15,8 @@ These are **proprietary / non-redistributable** and excluded from the repo
 
 | File | Notes |
 |------|-------|
-| `libs/Pixelmon-1.20.2-9.2.10.jar` | Pixelmon mod, compile-time API only. Use the 1.20.2 / 9.2.10 build from the official Pixelmon site, or change the filename in `build.gradle`. |
-| `libs/minecraft-server-1.20.2-srg.jar` | SRG-mapped MC 1.20.2 server for transitive NMS *type resolution only* (no direct NMS calls). Produced by the Forge/MCP toolchain. |
+| `libs/Pixelmon-1.20.2-9.2.10.jar` | Pixelmon mod, compile-time API only. This is the filename currently referenced by `build.gradle` in this repo clone; for a pure 1.21.1 build, use the matching Pixelmon 9.3.x jar and update the filename in `build.gradle`. |
+| `libs/minecraft-server-1.20.2-srg.jar` | SRG-mapped Minecraft server jar for transitive NMS type resolution only. For a pure 1.21.1 build, use the matching 1.21.1 server jar and update the filename in `build.gradle`. |
 
 Both are referenced `compileOnly`, so they are **never shaded** into the output.
 
@@ -38,6 +39,7 @@ expands `${version}` into `plugin.yml` at build time.
 ## Project layout
 
 See [the repo README](https://github.com/NinJackson/Hatchery#building-from-source)
-and `PLAN.md` for the full package map. The golden rule: **all Pixelmon/NMS
-coupling is reflective and isolated in `gg.hatchery.pixelmon.PixelmonHook`** —
-that's the only file a Pixelmon version bump should touch.
+and `PLAN.md` for the full package map. The golden rule: **Pixelmon/NMS
+coupling lives in `gg.hatchery.pixelmon.PixelmonHook`**. The current 1.21.1
+line uses the `v1_21_R1` CraftBukkit package for sprite conversion and keeps
+the party-storage duplicate guard there.

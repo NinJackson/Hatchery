@@ -7,12 +7,13 @@ they are only needed to compile — they are never shaded into the output jar.
 
 | File | What it is | Where to get it |
 |------|------------|-----------------|
-| `Pixelmon-1.20.2-9.2.10.jar` | The Pixelmon mod (compile-time API only) | Official Pixelmon download (https://pixelmonmod.com/) — use the **1.20.2 / 9.2.10** build, or adjust the filename in `build.gradle`. |
-| `minecraft-server-1.20.2-srg.jar` | SRG-mapped MC 1.20.2 server, for transitive NMS type resolution only (no direct NMS calls are made) | Produced by the Forge/MCP toolchain (e.g. from your Arclight/Forge build's `libraries/net/minecraft/server/1.20.2-*/...-srg.jar`). |
+| `Pixelmon-1.20.2-9.2.10.jar` | Pixelmon mod, compile-time API only. This is the filename currently referenced by `build.gradle` in this repo clone. | Official Pixelmon download. For the current 1.21.1 server line, use the matching Pixelmon 9.3.x jar and update the filename in `build.gradle`. |
+| `minecraft-server-1.20.2-srg.jar` | Minecraft server jar for transitive NMS type resolution only. | Produced by the Forge/MCP toolchain. For the current 1.21.1 server line, use the matching 1.21.1 server jar and update the filename in `build.gradle`. |
 
 If your Pixelmon build differs, update the filenames in the `dependencies {}`
 block of `build.gradle` accordingly.
 
-> Hatchery talks to Pixelmon and NMS **reflectively** wherever possible, so it
-> is resilient to mapping changes; these jars are for compile-time type
-> resolution, not runtime.
+> The current 1.21.1 runtime-sensitive code lives in
+> `gg.hatchery.pixelmon.PixelmonHook` (including the `v1_21_R1` CraftBukkit
+> sprite path and the party-storage duplicate guard). These jars are for
+> compile-time type resolution, not runtime.

@@ -6,9 +6,9 @@ a crafting datapack, shop, crate, kit, or `/give`. All 16 colours are
 recognised by default (`daycare.blocks`).
 
 **Which servers does it run on?**
-Built for **Arclight 1.20.2** (Bukkit↔Forge) with **Pixelmon 9.2.x**, Java 17.
-Pixelmon itself requires Forge/Arclight, so plain Paper/Spigot can't run the
-Pixelmon side.
+The current server-tested line runs on **Arclight 1.21.1** with **Pixelmon
+9.3.x**. Pixelmon itself requires Forge/Arclight, so plain Paper/Spigot can't
+run the Pixelmon side.
 
 **Can it pull Pokémon from the PC?**
 No — the player's 6-slot **party** only. PC support is a possible future
@@ -32,17 +32,25 @@ Default SQLite (`data.db`). For networks/shared data, set `storage.type: mysql`
 and fill `storage.mysql`. Pooled via HikariCP.
 
 **Do hourglasses / the upgrade item work yet?**
-Configs are fully defined and read; the right-click **apply** handlers
-(hourglass consumption, upgrade apply, drop-on-break) and some `/hatchery`
-subcommands are on the [Roadmap](Roadmap).
+Yes. Admin-issued hourglasses advance breeding progress on right-click, and
+the upgrade item expands the scan radius. Upgrade refunds on block break are
+controlled by `daycare.upgrade.drop-on-break`.
+
+**Can Hatchery duplicate parent Pokemon or held items?**
+The 1.21.1 build includes guards for the known duplicate paths: parent
+placement clears Pixelmon's active/original party storage and refuses placement
+if the parent UUID is still present, stale daycare copies are cleared on
+retrieve, and generated eggs have held items cleared before delivery.
 
 **Will it break when Pixelmon updates?**
-All Pixelmon API use is reflective and isolated in `PixelmonHook`. A major
-Pixelmon bump (e.g. 9.3+/1.21) may need that single file adjusted.
+Pixelmon storage/API behavior can change between major Minecraft versions. Most
+of the version-sensitive work is isolated in `PixelmonHook`.
 
 **Is it really free / open source?**
 Yes — **MIT**. No proprietary code or jars are bundled; you supply Pixelmon/MC
 jars only to *build* (see [Building from Source](Building-from-Source)).
 
 **Particles aren't showing.**
-Particle config is wired but visual polish is on the [Roadmap](Roadmap).
+Check `particles.*.enabled`, `particles.*.type`, and the interval settings in
+`config.yml`. Particle spawning is active in 1.1.2 and throttled by the
+configured intervals.

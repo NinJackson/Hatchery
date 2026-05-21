@@ -1,7 +1,8 @@
 # Hatchery — Configuration Reference
 
 Per-key reference for the four YAML files Hatchery loads from its data folder
-(`plugins/Hatchery/`). This document tracks `Hatchery 1.1.2`.
+(`plugins/Hatchery/`). This document tracks `Hatchery 1.1.2` on the current
+Minecraft 1.21.1 / Arclight / Pixelmon 9.3.x server line.
 
 Related docs:
 
@@ -164,8 +165,8 @@ universal-bonuses:
 
 The packaged default covers every Pokémon type — extend it per server taste.
 The block IDs you write here are matched against the **Bukkit Material
-namespace key** of each block in the scan volume. On Arclight 1.20.2 modded
-Pixelmon blocks expose namespaced material keys like `pixelmon:apricorn_log`.
+namespace key** of each block in the scan volume. On Arclight, modded Pixelmon
+blocks expose namespaced material keys like `pixelmon:apricorn_log`.
 
 ---
 
@@ -211,14 +212,14 @@ Every player-facing string. Admin command output is intentionally hard-coded
 | `daycare.disabled-world`   | — | Placement denied in a blacklisted world |
 | `breeding.egg-ready`       | `{world}` `{x}` `{y}` `{z}` | One egg has been generated; owner notified |
 | `breeding.egg-collected`   | `{species}` | Collect-egg button used successfully |
-| `breeding.pair-incompatible` | — | Reserved; not emitted by 1.1.0 code |
-| `breeding.satisfaction-changed` | `{color}` `{level}` `{points}` | Reserved; not emitted by 1.1.0 code |
+| `breeding.pair-incompatible` | — | Reserved; not emitted by 1.1.2 code |
+| `breeding.satisfaction-changed` | `{color}` `{level}` `{points}` | Reserved; not emitted by 1.1.2 code |
 | `hourglass.used`           | `{ticks}` | Hourglass right-click succeeded |
 | `hourglass.no-active-breeding` | — | Hourglass used on a daycare with no pair |
 | `hourglass.no-permission`  | — | Player lacked the tier permission |
 | `upgrade.applied`          | `{radius}` | Upgrade item right-click succeeded |
 | `upgrade.max-reached`      | — | Tried to upgrade a daycare at max level |
 | `gui.title`                | — | Title bar of the daycare GUI |
-| `gui.add-pokemon`          | — | Reserved; not used by core 1.1.0 GUI |
-| `gui.view-environment`     | — | Reserved; not used by core 1.1.0 GUI |
-| `gui.collect-egg`          | — | Reserved; not used by core 1.1.0 GUI |
+| `gui.add-pokemon`          | — | Reserved; not used by core 1.1.2 GUI |
+| `gui.view-environment`     | — | Reserved; not used by core 1.1.2 GUI |
+| `gui.collect-egg`          | — | Reserved; not used by core 1.1.2 GUI |

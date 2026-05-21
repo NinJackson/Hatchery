@@ -24,6 +24,11 @@ Pixelmon's own API:
 
 Incompatible pairs are refused with `breeding.pair-incompatible`.
 
+On the 1.21.1 server line, Hatchery treats parent placement as successful only
+after Pixelmon no longer reports that Pokemon UUID in the player's active or
+original party storage. If Pixelmon still reports the UUID, placement is
+refused to prevent a duplicate parent.
+
 ## 3. Ticks, environment & satisfaction
 
 Every `breeding.tick-interval-seconds` (while the chunk is loaded — breeding
@@ -45,6 +50,8 @@ When progress reaches `breeding.base-points-needed`, the egg is marked ready
 (`breeding.egg-ready` with coordinates). The owner right-clicks the daycare and
 clicks **Collect Egg** in the GUI (`breeding.egg-collected`). The egg is created
 through Pixelmon's `pokemon.makeEgg()` and hatches via normal Pixelmon rules.
+Hatchery clears the generated egg's held item before delivery so parent-held
+items cannot be copied onto eggs.
 `max-eggs-per-daycare` caps uncollected eggs.
 
 ## 5. Speed-ups
@@ -57,6 +64,7 @@ See [Hourglasses & Upgrades](Hourglasses-and-Upgrades).
 
 ## Performance note
 
-The scanner currently does a **full rescan each tick** — fine for ≲50 active
-daycares. Incremental invalidation (`BlockChangeListener`) is on the
-[Roadmap](Roadmap) for larger networks.
+Environment results are cached per daycare and invalidated when nearby blocks
+change, parents change, or an upgrade is applied. Very large networks may
+still eventually want async scanning, but ordinary active daycare counts avoid
+the old full-rescan-on-every-tick behavior.

@@ -53,6 +53,8 @@ Only the **owner** of the daycare can add/remove Pokémon or collect eggs. Other
 
 To **retrieve a parent later**: shift-click that parent in the daycare menu. They go back to your party (if there's room).
 
+If an older daycare record already contains a Pokemon that is still in your party, Hatchery clears the daycare copy instead of giving you a duplicate. You'll see: `That Pokemon was already in your party, so the daycare copy was cleared.`
+
 **Compatibility rules:**
 - Both parents must share an **egg group**, OR exactly one is a **Ditto**
 - Two Dittos can't breed each other
@@ -140,6 +142,8 @@ When the Status book shows `Eggs ready: 1` (or more):
 1. A green **Collect Egg** button appears in the top row of the menu
 2. Click it
 3. The egg lands in your party as a Pixelmon egg
+
+Hatchery clears held items from generated eggs, so parent-held items cannot be copied onto eggs.
 
 **Failure cases:**
 - `Your party is full — make room first.` → the egg stays parked until you free a slot

@@ -56,8 +56,8 @@ multiplier**. Defaults:
 
 ### `particles`
 `during-breeding` and `egg-ready` blocks: `enabled`, `type` (Bukkit Particle),
-`count`, `interval-seconds`, `offset {x,y,z}`. *(Spawn code is wired; visual
-polish is on the [Roadmap](Roadmap).)*
+`count`, `interval-seconds`, `offset {x,y,z}`. Particle spawning is active and
+throttled by the configured interval.
 
 ---
 
@@ -77,12 +77,16 @@ Default `bronze` / `silver` / `gold`:
 | Key | Meaning |
 |-----|---------|
 | `base-item` | Item used as the hourglass (default `pixelmon:hourglass`) |
-| `display-name` / `lore` | Identity used to match the held item |
+| `display-name` / `lore` | Visible text applied to admin-issued items |
 | `ticks-added` | Ticks fast-forwarded (10 / 25 / 50) |
 | `consume` | Consume the item on use (`true`) |
 | `permission` | Required node (`hatchery.hourglass.<tier>`) |
 
 Add your own tiers by adding more keys under `hourglasses:`.
+
+Hourglasses are recognised by the hidden persistent tag baked in by
+`/hatchery give-hourglass`, not by display-name/lore matching. A vanilla item
+with copied text will not work.
 
 ---
 

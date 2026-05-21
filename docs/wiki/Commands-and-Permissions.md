@@ -7,12 +7,10 @@
 | `/daycares` | `/dc` | `hatchery.use` | Open your daycare list / GUI. |
 | `/hatchery reload` | `/osb`, `/oldschoolbreeding` | `hatchery.admin` | Reload all configs. |
 | `/hatchery list` | | `hatchery.admin` | List registered daycares. |
-| `/hatchery give-hourglass` | | `hatchery.admin` | Give an hourglass item. *(planned)* |
-| `/hatchery give-upgrade` | | `hatchery.admin` | Give an upgrade item. *(planned)* |
-| `/hatchery force-egg` | | `hatchery.admin` | Force an egg at a daycare. *(planned)* |
-| `/hatchery remove` | | `hatchery.admin` | Remove a daycare. *(planned)* |
-
-Items marked *(planned)* are on the [Roadmap](Roadmap).
+| `/hatchery give-hourglass <player> <tier> [amount]` | | `hatchery.admin` | Give a tagged hourglass item. |
+| `/hatchery give-upgrade <player> [amount]` | | `hatchery.admin` | Give a tagged environment-upgrade item. |
+| `/hatchery force-egg <player|daycare-id>` | | `hatchery.admin` | Force an egg at a daycare. |
+| `/hatchery remove <daycare-id>` | | `hatchery.admin` | Remove a daycare registration. |
 
 ## Permissions
 

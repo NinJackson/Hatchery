@@ -1,9 +1,16 @@
 # Hatchery — Admin Guide
 
-Server-operator content for Hatchery `1.1.2`. For the player-facing manual see
-**[PLAYER-GUIDE.md](./PLAYER-GUIDE.md)**. For per-key YAML config reference
-see **[CONFIG.md](./CONFIG.md)**.
+Server-operator content for Hatchery `1.1.2`, currently maintained for the
+Minecraft 1.21.1 / Arclight / Pixelmon 9.3.x server line. For the
+player-facing manual see **[PLAYER-GUIDE.md](./PLAYER-GUIDE.md)**. For per-key
+YAML config reference see **[CONFIG.md](./CONFIG.md)**.
 
+> **1.21.1 port note.** The live build updates the Pixelmon bridge for the
+> `v1_21_R1` CraftBukkit package and Pixelmon 9.3.x storage behavior. Parent
+> placement now clears both active and original party storage, refreshes the
+> client, and refuses placement if Pixelmon still reports that Pokemon UUID in
+> the party. Eggs also have held items cleared before delivery.
+>
 > 📌 **1.1.1 block change.** Hatchery binds to Pixelmon 9.x's
 > `pixelmon:<colour>_day_care` blocks (16 dyed variants) instead of the
 > defunct `pixelmon:ranch_block`. Configs from earlier versions are
@@ -217,7 +224,7 @@ right-click. Default: empty list.
 
 When a player right-clicks one of the blocks listed in `daycare.blocks`,
 Hatchery's `DaycareInteractListener` cancels the Bukkit `PlayerInteractEvent`.
-On Arclight 1.20.2 this short-circuits vanilla's `useItemOn` flow before
+On Arclight this short-circuits vanilla's `useItemOn` flow before
 `Block#use()` runs, so Pixelmon's own `DayCareBlock#use` never executes and
 its GUI never opens.
 
@@ -286,8 +293,8 @@ import to the other manually if needed.
 Hatchery's lines are tagged `[Hatchery]` in the console. Key boot sequence:
 
 ```
-[Hatchery] Loading Hatchery v1.1.0
-[Hatchery] Enabling Hatchery v1.1.0
+[Hatchery] Loading Hatchery v1.1.2
+[Hatchery] Enabling Hatchery v1.1.2
 [Hatchery] Loaded N daycare(s).
 [Hatchery] Hatchery enabled (storage=sqlite).
 ```
@@ -300,6 +307,7 @@ Hatchery's lines are tagged `[Hatchery]` in the console. Key boot sequence:
 | `Failed to initialize storage backend (mysql).` | JDBC URL or credentials wrong | Verify connection from the server host with the same creds |
 | `Failed to load configuration. Disabling.` | A YAML file has a parser error | Run `yamllint plugins/Hatchery/*.yml` or check for stray tabs / unquoted strings |
 | `addToParty failed: ...` in console when collecting an egg | Pixelmon storage subsystem returned an error | Player should try again; if persistent, check the Pixelmon log for related entries |
+| `Refusing daycare placement: Pixelmon party slot ... still contains ... after removal.` | Pixelmon still reported the parent in active/original party storage after Hatchery tried to remove it | Placement is intentionally blocked to prevent a Pokemon dupe; gather the log line, player UUID, and exact Pixelmon build before retrying |
 
 ### Players reporting "breeding stuck"
 
@@ -316,6 +324,21 @@ Run through this checklist:
 If you can reproduce it, `/hatchery force-egg <player>` is a clean way to
 unblock them without giving away material rewards (it just emits one egg from
 their existing pair).
+
+### Players reporting duplicate parents
+
+The 1.21.1 build contains two layers of protection:
+
+- Parent placement is considered successful only after Pixelmon no longer
+  reports that Pokemon UUID in either the active party or original party array.
+- If a stale daycare record from an older build already contains a Pokemon that
+  is still in the owner's party, shift-clicking the parent slot clears the
+  daycare-side copy instead of adding another copy to the party.
+
+If a player can still duplicate a parent, capture the exact reproduction steps
+and check the log for `Refusing daycare placement`. The most useful evidence is
+the parent slot, Pokemon UUID, and whether the player was in any Pixelmon
+temporary-party mode at the time.
 
 ---
 

@@ -24,14 +24,16 @@ hourglasses:
     permission: hatchery.hourglass.bronze
 ```
 
-- The item is matched by `base-item` + `display-name`/`lore` identity.
+- The item is matched by the hidden `hatchery:hourglass_id` persistent tag
+  created by `/hatchery give-hourglass`.
 - `consume: true` removes one on use.
 - Add custom tiers by adding more keys with their own `permission`.
-- Distribute via crates/shops/`/give` (or, once implemented,
-  `/hatchery give-hourglass` — see [Roadmap](Roadmap)).
+- Distribute with `/hatchery give-hourglass <player> <tier> [amount]`. Crates
+  or shops should give the tagged item produced by that command, not a plain
+  vanilla item with copied display text.
 
-> Status: hourglass right-click consumption is on the [Roadmap](Roadmap)
-> (config is fully defined and read).
+Plain items created with `/give` will not work as hourglasses unless another
+tool preserves the plugin's persistent data tag.
 
 ## Environment Upgrade item
 
@@ -50,5 +52,5 @@ blocks contribute [environment points](Environment-Points).
 Effective radius = `base-scan-radius` + (upgrades × `radius-per-level`),
 clamped at `max-upgrades`.
 
-> Status: upgrade apply + drop-on-break payout are on the [Roadmap](Roadmap)
-> (identity/values configured and read today).
+Admins can issue upgrade items with `/hatchery give-upgrade <player> [amount]`.
+Applied upgrades are refunded on block break when `drop-on-break` is true.

@@ -4,11 +4,14 @@ Thanks for your interest! Hatchery is a community-friendly, MIT-licensed plugin.
 
 ## Dev setup
 
-- **Java 17**, **Gradle 8.7**, Shadow plugin (see `build.gradle`).
+- **Gradle 8.7**, Shadow plugin (see `build.gradle`), and a local JDK that can
+  run the build. The project currently emits Java 17 bytecode; the 1.21.1
+  Minecraft server runtime itself should run on Java 21.
 - Supply the compile-only jars in `libs/` (see [`libs/README.md`](libs/README.md)).
   They are `.gitignore`d and **must never be committed** (non-redistributable).
 - Build: `gradle shadowJar` → `build/libs/Hatchery-<version>.jar`.
-- Test against **Arclight 1.20.2 + Pixelmon 9.2.x** (Arclight bridges Bukkit↔Forge).
+- Test against **Arclight 1.21.1 + Pixelmon 9.3.x** for the current server line
+  unless you are intentionally maintaining an older branch.
 
 ## Architecture (where things live)
 
@@ -26,25 +29,21 @@ gg.hatchery
 └── util/                    ItemBuilder
 ```
 
-**Key principle:** all Pixelmon/NMS coupling is **reflective and isolated**.
-`pixelmon/PixelmonHook.java` is the single file that touches the Pixelmon API —
-keep it that way so Pixelmon version bumps stay a one-file change.
+**Key principle:** keep Pixelmon/NMS coupling isolated in
+`pixelmon/PixelmonHook.java` where possible. That file owns the runtime-specific
+CraftBukkit sprite path, Pixelmon party storage behavior, and egg cleanup.
 
-## Good first issues (planned work)
+## Good first issues
 
-- Hourglass right-click consumption + tick advancement.
-- Environment Upgrade item: right-click apply + drop-on-break payout.
-- `BlockChangeListener`: incremental env-point cache invalidation (replace the
-  per-tick full rescan).
-- Particle effect polish (`particles` config is wired).
-- Remaining `/hatchery` admin subcommands: `give-hourglass`, `give-upgrade`,
-  `force-egg`, `remove`.
 - PlaceholderAPI integration for `messages.yml`.
+- PC-storage parent selection.
+- Better automated tests around pair compatibility and party-storage edge cases.
+- Async or batched environment scanning for very large networks.
 
 ## Guidelines
 
 - Match existing code style; keep changes focused.
-- Don't introduce hard NMS calls — go through reflection helpers.
+- Avoid spreading NMS/runtime-specific calls outside `PixelmonHook`.
 - New behaviour should be **config-driven** (add keys with sane defaults; never
   hard-code numbers a server owner would want to tune).
 - Update `messages.yml` for any new player-facing string.
