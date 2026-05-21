@@ -1,6 +1,5 @@
 package gg.hatchery.pixelmon;
 
-import com.pixelmonmod.pixelmon.api.pokemon.Element;
 import com.pixelmonmod.pixelmon.api.pokemon.Pokemon;
 import com.pixelmonmod.pixelmon.api.pokemon.egg.EggGroup;
 import com.pixelmonmod.pixelmon.api.pokemon.species.gender.Gender;
@@ -257,11 +256,56 @@ public class PixelmonHook {
 
     public List<String> getTypes(Pokemon p) {
         if (p == null || p.getForm() == null) return Collections.emptyList();
-        List<Element> els = p.getForm().getTypes();
+        List<?> els = p.getForm().getTypes();
         if (els == null || els.isEmpty()) return Collections.emptyList();
         List<String> out = new ArrayList<>(els.size());
-        for (Element e : els) out.add(e.name().toLowerCase(Locale.ROOT));
+        for (Object e : els) {
+            String key = typeKey(e);
+            if (key != null && !key.isBlank()) out.add(key);
+        }
         return out;
+    }
+
+    private String typeKey(Object type) {
+        return typeKey(type, Collections.newSetFromMap(new IdentityHashMap<>()));
+    }
+
+    private String typeKey(Object type, Set<Object> seen) {
+        if (type == null) return null;
+        if (!seen.add(type)) return null;
+        if (type instanceof Optional<?>) {
+            Optional<?> optional = (Optional<?>) type;
+            return optional.map(value -> typeKey(value, seen)).orElse(null);
+        }
+        for (String method : Arrays.asList("unwrapKey", "location", "getKey", "key", "value")) {
+            try {
+                Object value = type.getClass().getMethod(method).invoke(type);
+                String key = typeKey(value, seen);
+                if (key != null && !key.isBlank()) return key;
+            } catch (Throwable ignored) {
+            }
+        }
+        for (String method : Arrays.asList("name", "getName", "getKey")) {
+            try {
+                Object value = type.getClass().getMethod(method).invoke(type);
+                String key = stringKey(value.toString());
+                if (key != null && !key.isBlank()) return key;
+            } catch (Throwable ignored) {
+            }
+        }
+        return stringKey(type.toString());
+    }
+
+    private String stringKey(String value) {
+        if (value == null) return null;
+        String key = value.toLowerCase(Locale.ROOT);
+        int namespace = key.lastIndexOf(':');
+        if (namespace >= 0 && namespace + 1 < key.length()) {
+            key = key.substring(namespace + 1);
+        }
+        int bracket = key.indexOf(']');
+        if (bracket >= 0) key = key.substring(0, bracket);
+        return key.replaceAll("[^a-z0-9_\\-]", "");
     }
 
     /** Returns the merged types of both parents (de-duplicated). */
