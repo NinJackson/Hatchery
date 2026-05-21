@@ -5,11 +5,13 @@ import com.pixelmonmod.pixelmon.api.pokemon.PokemonFactory;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
+import org.bukkit.Bukkit;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.lang.reflect.Method;
 import java.util.Base64;
 
 /**
@@ -20,15 +22,16 @@ public final class PokemonNbtCodec {
     private PokemonNbtCodec() {}
 
     public static String encode(Pokemon p) {
+        if (p == null) return "";
         try {
             CompoundTag tag = new CompoundTag();
-            p.writeToNBT(tag);
+            writePokemonNbt(p, tag);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try (DataOutputStream out = new DataOutputStream(baos)) {
                 NbtIo.m_128941_(tag, out);
             }
             return Base64.getEncoder().encodeToString(baos.toByteArray());
-        } catch (Exception e) {
+        } catch (Throwable e) {
             return null;
         }
     }
@@ -41,20 +44,56 @@ public final class PokemonNbtCodec {
             try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(bytes))) {
                 tag = NbtIo.m_128934_(in, NbtAccounter.m_301669_());
             }
-            return PokemonFactory.create(tag);
-        } catch (Exception e) {
+            return createPokemon(tag);
+        } catch (Throwable e) {
             return null;
         }
     }
 
     /** Pair serializer: encodes both parents as a delimited string. */
     public static String encodePair(Pokemon a, Pokemon b) {
-        return encode(a) + "|" + encode(b);
+        String left = encode(a);
+        String right = encode(b);
+        if (left == null || right == null) return null;
+        return left + "|" + right;
     }
 
     public static Pokemon[] decodePair(String pairStr) {
         if (pairStr == null || !pairStr.contains("|")) return new Pokemon[]{null, null};
         String[] parts = pairStr.split("\\|", 2);
         return new Pokemon[]{ decode(parts[0]), decode(parts[1]) };
+    }
+
+    private static void writePokemonNbt(Pokemon pokemon, CompoundTag tag) throws ReflectiveOperationException {
+        try {
+            pokemon.getClass().getMethod("writeToNBT", CompoundTag.class).invoke(pokemon, tag);
+            return;
+        } catch (NoSuchMethodException ignored) {
+        }
+        Method method = pokemon.getClass().getMethod("writeToNBT", CompoundTag.class, providerClass());
+        method.invoke(pokemon, tag, registryProvider());
+    }
+
+    private static Pokemon createPokemon(CompoundTag tag) throws ReflectiveOperationException {
+        try {
+            return (Pokemon) PokemonFactory.class.getMethod("create", CompoundTag.class).invoke(null, tag);
+        } catch (NoSuchMethodException ignored) {
+        }
+        Method method = PokemonFactory.class.getMethod("create", CompoundTag.class, providerClass());
+        return (Pokemon) method.invoke(null, tag, registryProvider());
+    }
+
+    private static Class<?> providerClass() throws ClassNotFoundException {
+        return Class.forName("net.minecraft.core.HolderLookup$Provider");
+    }
+
+    private static Object registryProvider() throws ReflectiveOperationException {
+        Object craftServer = Bukkit.getServer();
+        Object minecraftServer = craftServer.getClass().getMethod("getServer").invoke(craftServer);
+        try {
+            return minecraftServer.getClass().getMethod("registryAccess").invoke(minecraftServer);
+        } catch (NoSuchMethodException ignored) {
+            return minecraftServer.getClass().getMethod("m_206579_").invoke(minecraftServer);
+        }
     }
 }

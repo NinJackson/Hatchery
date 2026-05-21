@@ -5,6 +5,7 @@ import gg.hatchery.Hatchery;
 import gg.hatchery.config.MessagesConfig;
 import gg.hatchery.daycare.Daycare;
 import gg.hatchery.pixelmon.PixelmonHook;
+import gg.hatchery.pixelmon.PokemonNbtCodec;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -108,14 +109,34 @@ public class PartyPickerMenu implements HatcheryMenu {
             PartyPickerMenu.open(plugin, viewer, daycare, parentSlotIndex);
             return;
         }
-        if (!plugin.getPixelmonHook().removeFromPartySlot(viewer, slot)) {
+
+        Pokemon[] pair = PokemonNbtCodec.decodePair(daycare.getPairJson());
+        pair[parentSlotIndex] = current;
+        String encodedPair = PokemonNbtCodec.encodePair(pair[0], pair[1]);
+        if (encodedPair == null) {
+            viewer.sendMessage("§cCould not store that Pokemon. Please report this to staff.");
+            plugin.getLogger().warning("Refusing daycare placement: failed to serialize Pokemon "
+                    + current.getUUID() + " for daycare " + daycare.getId() + ".");
+            return;
+        }
+
+        if (!hook.removeFromPartySlot(viewer, slot)) {
             viewer.sendMessage("§cCould not retrieve that Pokemon.");
             return;
         }
-        DaycareMenu.open(plugin, viewer, daycare);
-        HatcheryMenu open = plugin.getMenuManager().get(viewer);
-        if (open instanceof DaycareMenu) {
-            ((DaycareMenu) open).setParent(parentSlotIndex, current);
+
+        try {
+            daycare.setPairJson(encodedPair);
+            plugin.getStorage().saveDaycare(daycare);
+            DaycareMenu.open(plugin, viewer, daycare);
+        } catch (Throwable t) {
+            plugin.getLogger().warning("Failed to store daycare parent " + current.getUUID()
+                    + " for daycare " + daycare.getId() + ": " + t.getMessage());
+            if (hook.addToParty(viewer, current)) {
+                viewer.sendMessage("§cCould not store that Pokemon; it was returned to your party.");
+            } else {
+                viewer.sendMessage("§cCould not store that Pokemon, and your party was full when returning it. Contact staff.");
+            }
         }
     }
 
