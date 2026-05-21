@@ -1,6 +1,8 @@
 package gg.hatchery;
 
 import gg.hatchery.breeding.BreedingEngine;
+import gg.hatchery.breeding.HourglassService;
+import gg.hatchery.breeding.UpgradeService;
 import gg.hatchery.commands.DaycaresCommand;
 import gg.hatchery.commands.HatcheryAdminCommand;
 import gg.hatchery.config.ConfigManager;
@@ -27,6 +29,8 @@ public final class Hatchery extends JavaPlugin {
     private Storage storage;
     private DaycareManager daycareManager;
     private BreedingEngine breedingEngine;
+    private HourglassService hourglassService;
+    private UpgradeService upgradeService;
     private PixelmonHook pixelmonHook;
     private MenuManager menuManager;
 
@@ -72,6 +76,8 @@ public final class Hatchery extends JavaPlugin {
         this.menuManager = new MenuManager();
 
         this.breedingEngine = new BreedingEngine(this);
+        this.hourglassService = new HourglassService(this);
+        this.upgradeService = new UpgradeService(this);
         this.breedingEngine.start();
 
         // --- Listeners ---
@@ -105,6 +111,8 @@ public final class Hatchery extends JavaPlugin {
     public Storage         getStorage()         { return storage; }
     public DaycareManager  getDaycareManager()  { return daycareManager; }
     public BreedingEngine  getBreedingEngine()  { return breedingEngine; }
+    public HourglassService getHourglassService() { return hourglassService; }
+    public UpgradeService  getUpgradeService()  { return upgradeService; }
     public PixelmonHook    getPixelmonHook()    { return pixelmonHook; }
     public MenuManager     getMenuManager()     { return menuManager; }
 }

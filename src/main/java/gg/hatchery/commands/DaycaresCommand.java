@@ -30,7 +30,7 @@ public class DaycaresCommand implements CommandExecutor {
                 + ChatColor.GRAY + " — " + ChatColor.WHITE + owned.size() + ChatColor.GRAY + " / "
                 + ChatColor.WHITE + max);
         if (owned.isEmpty()) {
-            p.sendMessage(ChatColor.GRAY + "You don't own any daycares yet. Place a Pixelmon Day Care block to register one.");
+            p.sendMessage(ChatColor.GRAY + "You don't own any daycares yet. Place a ranch block to register one.");
             return true;
         }
         int i = 1;

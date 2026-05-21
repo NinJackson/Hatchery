@@ -3,11 +3,11 @@ package gg.hatchery.pixelmon;
 import com.pixelmonmod.pixelmon.api.pokemon.Element;
 import com.pixelmonmod.pixelmon.api.pokemon.Pokemon;
 import com.pixelmonmod.pixelmon.api.pokemon.egg.EggGroup;
-import com.pixelmonmod.pixelmon.api.pokemon.species.Stats;
 import com.pixelmonmod.pixelmon.api.pokemon.species.gender.Gender;
+import com.pixelmonmod.pixelmon.api.pokemon.species.Stats;
 import com.pixelmonmod.pixelmon.api.storage.PlayerPartyStorage;
-import com.pixelmonmod.pixelmon.api.storage.StoragePosition;
 import com.pixelmonmod.pixelmon.api.storage.StorageProxy;
+import com.pixelmonmod.pixelmon.api.util.helpers.SpriteItemHelper;
 import gg.hatchery.Hatchery;
 import gg.hatchery.daycare.Daycare;
 import org.bukkit.Bukkit;
@@ -19,19 +19,14 @@ import java.util.*;
 
 /**
  * Real Pixelmon API integration for Hatchery.
- *
- * NMS-touching paths (sprite item conversion) use reflection so the plugin
- * compiles without a Mojang-mapped Minecraft jar on the classpath. Arclight
- * provides Mojang-mapped NMS classes at runtime.
  */
 public class PixelmonHook {
 
     private final Hatchery plugin;
     private final boolean present;
 
-    private Method craftAsBukkitCopy;          // CraftItemStack.asBukkitCopy(nms ItemStack)
-    private Method spriteHelperGetPhoto;        // SpriteItemHelper.getPhoto(Pokemon)
-    private Method storageProxyGetPartyNow;     // StorageProxy.getPartyNow(UUID)
+    /** Cached reflection: org.bukkit.craftbukkit.v1_21_R1.inventory.CraftItemStack#asBukkitCopy */
+    private Method craftAsBukkitCopy;
 
     public PixelmonHook(Hatchery plugin) {
         this.plugin = plugin;
@@ -44,32 +39,12 @@ public class PixelmonHook {
 
         if (p) {
             try {
-                // Sprite helper: returns NMS ItemStack
-                Class<?> spriteHelper = Class.forName(
-                        "com.pixelmonmod.pixelmon.api.util.helpers.SpriteItemHelper");
-                this.spriteHelperGetPhoto = spriteHelper.getMethod("getPhoto", Pokemon.class);
-
-                // CraftItemStack lookup
-                String pkg = Bukkit.getServer().getClass().getPackage().getName();
-                String version = pkg.substring(pkg.lastIndexOf('.') + 1);
-                Class<?> craft = Class.forName(
-                        "org.bukkit.craftbukkit." + version + ".inventory.CraftItemStack");
-                Class<?> nmsItemStack = Class.forName("net.minecraft.world.item.ItemStack");
-                this.craftAsBukkitCopy = craft.getMethod("asBukkitCopy", nmsItemStack);
-
-                // StorageProxy.getPartyNow(UUID) — find via reflection to skip ServerPlayer overload
-                Class<?> storageProxy = Class.forName(
-                        "com.pixelmonmod.pixelmon.api.storage.StorageProxy");
-                for (Method m : storageProxy.getMethods()) {
-                    if (m.getName().equals("getPartyNow")
-                            && m.getParameterCount() == 1
-                            && m.getParameterTypes()[0] == UUID.class) {
-                        this.storageProxyGetPartyNow = m;
-                        break;
-                    }
-                }
+                // 1.21.1 Arclight
+                Class<?> craft = Class.forName("org.bukkit.craftbukkit.v1_21_R1.inventory.CraftItemStack");
+                this.craftAsBukkitCopy = craft.getMethod("asBukkitCopy",
+                        net.minecraft.world.item.ItemStack.class);
             } catch (Throwable t) {
-                plugin.getLogger().warning("Pixelmon API reflection setup failed: " + t.getMessage());
+                plugin.getLogger().warning("Could not locate CraftItemStack - sprite icons will be unavailable.");
             }
         }
     }
@@ -82,7 +57,7 @@ public class PixelmonHook {
 
     /** Returns the player's party (size 6, slots may be null). */
     public Pokemon[] getParty(Player player) {
-        PlayerPartyStorage storage = partyOf(player);
+        PlayerPartyStorage storage = StorageProxy.getPartyNow(player.getUniqueId());
         return storage == null ? new Pokemon[6] : storage.getAll();
     }
 
@@ -93,10 +68,28 @@ public class PixelmonHook {
     }
 
     public boolean removeFromPartySlot(Player player, int slot) {
-        PlayerPartyStorage storage = partyOf(player);
+        PlayerPartyStorage storage = StorageProxy.getPartyNow(player.getUniqueId());
         if (storage == null) return false;
         try {
-            storage.set(new StoragePosition(-1, slot), null);
+            com.pixelmonmod.pixelmon.api.storage.StoragePosition pos =
+                    new com.pixelmonmod.pixelmon.api.storage.StoragePosition(-1, slot);
+            Pokemon before = storage.get(pos);
+            if (before == null) return false;
+
+            storage.set(pos, null);
+            invokeIfPresent(storage, "setOriginal",
+                    new Class<?>[]{com.pixelmonmod.pixelmon.api.storage.StoragePosition.class, Pokemon.class},
+                    new Object[]{pos, null});
+            invokeIfPresent(storage, "setNeedsSaving", new Class<?>[0], new Object[0]);
+            invokeIfPresent(storage, "sendClientUpdatePacket", new Class<?>[0], new Object[0]);
+            invokeIfPresent(storage, "sendClientUpdateSelectedPacket", new Class<?>[0], new Object[0]);
+
+            if (containsPokemonUuid(storage.getAll(), before)
+                    || containsPokemonUuid(originalParty(storage), before)) {
+                plugin.getLogger().warning("Refusing daycare placement: Pixelmon party slot "
+                        + slot + " still contains " + before.getUUID() + " after removal.");
+                return false;
+            }
             return true;
         } catch (Throwable t) {
             plugin.getLogger().warning("removeFromPartySlot failed: " + t.getMessage());
@@ -104,9 +97,34 @@ public class PixelmonHook {
         }
     }
 
+    private Object invokeIfPresent(Object target, String method, Class<?>[] types, Object[] args) {
+        try {
+            Method m = target.getClass().getMethod(method, types);
+            return m.invoke(target, args);
+        } catch (NoSuchMethodException ignored) {
+            return null;
+        } catch (Throwable t) {
+            plugin.getLogger().warning(method + " failed: " + t.getMessage());
+            return null;
+        }
+    }
+
+    private Pokemon[] originalParty(PlayerPartyStorage storage) {
+        Object result = invokeIfPresent(storage, "getOriginalParty", new Class<?>[0], new Object[0]);
+        return result instanceof Pokemon[] ? (Pokemon[]) result : new Pokemon[0];
+    }
+
+    private boolean containsPokemonUuid(Pokemon[] party, Pokemon target) {
+        if (party == null || target == null || target.getUUID() == null) return false;
+        for (Pokemon p : party) {
+            if (p != null && target.getUUID().equals(p.getUUID())) return true;
+        }
+        return false;
+    }
+
     public boolean addToParty(Player player, Pokemon p) {
         if (p == null) return false;
-        PlayerPartyStorage storage = partyOf(player);
+        PlayerPartyStorage storage = StorageProxy.getPartyNow(player.getUniqueId());
         if (storage == null) return false;
         try {
             storage.addAndGetPosition(p);
@@ -117,14 +135,12 @@ public class PixelmonHook {
         }
     }
 
-    private PlayerPartyStorage partyOf(Player player) {
-        if (storageProxyGetPartyNow == null) return null;
-        try {
-            return (PlayerPartyStorage) storageProxyGetPartyNow.invoke(null, player.getUniqueId());
-        } catch (Throwable t) {
-            plugin.getLogger().warning("partyOf failed: " + t.getMessage());
-            return null;
-        }
+    public boolean hasPokemonInParty(Player player, Pokemon pokemon) {
+        if (pokemon == null) return false;
+        PlayerPartyStorage storage = StorageProxy.getPartyNow(player.getUniqueId());
+        if (storage == null) return false;
+        return containsPokemonUuid(storage.getAll(), pokemon)
+                || containsPokemonUuid(originalParty(storage), pokemon);
     }
 
     /* ----------------------------------------------------------------
@@ -137,21 +153,26 @@ public class PixelmonHook {
         Stats sb = b.getForm();
         if (sa == null || sb == null) return false;
 
+        // Rule: same species can't always breed (e.g. genderless mostly can't except Ditto)
+        // Easy short-circuit: Ditto matches any non-undiscovered, except another Ditto.
         boolean aDitto = isDitto(a);
         boolean bDitto = isDitto(b);
         if (aDitto && bDitto) return false;
 
+        // Egg group check (must share a non-undiscovered group, or one is ditto)
         List<EggGroup> ga = sa.getEggGroups();
         List<EggGroup> gb = sb.getEggGroups();
         if (containsUndiscovered(ga) || containsUndiscovered(gb)) return false;
 
         if (!aDitto && !bDitto) {
+            // Use Pixelmon's built-in compatibility check (egg groups)
             boolean canBreed = false;
             for (EggGroup g : ga) {
                 if (g.canBreedWith(gb)) { canBreed = true; break; }
             }
             if (!canBreed) return false;
 
+            // Gender check (must be male + female)
             Gender genderA = a.getGender();
             Gender genderB = b.getGender();
             if (genderA == null || genderB == null) return false;
@@ -180,18 +201,58 @@ public class PixelmonHook {
 
     public Pokemon makeEgg(Pokemon a, Pokemon b) {
         if (!isCompatible(a, b)) return null;
-        Pokemon base = isDitto(a) ? b : a;
+        Pokemon base;
+        boolean aDitto = isDitto(a);
+        boolean bDitto = isDitto(b);
+        if (aDitto && !bDitto) {
+            base = b;
+        } else if (bDitto && !aDitto) {
+            base = a;
+        } else {
+            base = pickFemale(a, b);
+        }
         if (base == null) return null;
         try {
-            return base.makeEgg();
+            Pokemon egg = base.makeEgg();
+            clearHeldItem(egg);
+            return egg;
         } catch (Throwable t) {
             plugin.getLogger().warning("makeEgg failed: " + t.getMessage());
             return null;
         }
     }
 
+    public void clearHeldItem(Pokemon p) {
+        if (p == null) return;
+        try {
+            p.setHeldItem(emptyNativeItemStack());
+        } catch (Throwable t) {
+            plugin.getLogger().warning("clearHeldItem failed: " + t.getMessage());
+        }
+    }
+
+    private net.minecraft.world.item.ItemStack emptyNativeItemStack() throws ReflectiveOperationException {
+        try {
+            return (net.minecraft.world.item.ItemStack)
+                    net.minecraft.world.item.ItemStack.class.getField("EMPTY").get(null);
+        } catch (NoSuchFieldException ignored) {
+            return (net.minecraft.world.item.ItemStack)
+                    net.minecraft.world.item.ItemStack.class.getField("f_41583_").get(null);
+        }
+    }
+
+    public boolean isSamePokemon(Pokemon a, Pokemon b) {
+        return a != null && b != null && Objects.equals(a.getUUID(), b.getUUID());
+    }
+
+    private Pokemon pickFemale(Pokemon a, Pokemon b) {
+        if (a.getGender() == Gender.FEMALE) return a;
+        if (b.getGender() == Gender.FEMALE) return b;
+        return a;
+    }
+
     /* ----------------------------------------------------------------
-     * Type helpers
+     * Type / display helpers
      * ---------------------------------------------------------------- */
 
     public List<String> getTypes(Pokemon p) {
@@ -199,15 +260,21 @@ public class PixelmonHook {
         List<Element> els = p.getForm().getTypes();
         if (els == null || els.isEmpty()) return Collections.emptyList();
         List<String> out = new ArrayList<>(els.size());
-        for (Element e : els) {
-            // Element.getName() returns the display name like "Fire", "Water".
-            out.add(e.getName().toLowerCase(Locale.ROOT));
-        }
+        for (Element e : els) out.add(e.name().toLowerCase(Locale.ROOT));
         return out;
     }
 
+    /** Returns the merged types of both parents (de-duplicated). */
     public List<String> getPairTypes(String pairJson) {
         Pokemon[] pair = PokemonNbtCodec.decodePair(pairJson);
+        return getPairTypes(pair);
+    }
+
+    public List<String> getPairTypes(Daycare daycare) {
+        return getPairTypes(daycare.decodedPair());
+    }
+
+    private List<String> getPairTypes(Pokemon[] pair) {
         Set<String> types = new LinkedHashSet<>();
         if (pair[0] != null) types.addAll(getTypes(pair[0]));
         if (pair[1] != null) types.addAll(getTypes(pair[1]));
@@ -219,12 +286,12 @@ public class PixelmonHook {
         return p.getSpecies() == null ? "?" : p.getSpecies().getName();
     }
 
-    /** Returns a Bukkit ItemStack showing the Pokemon's sprite, or null. */
+    /** Returns a Bukkit ItemStack showing the Pokemon's sprite (Pixelmon photo item). */
     public ItemStack spriteItem(Pokemon p) {
-        if (p == null || craftAsBukkitCopy == null || spriteHelperGetPhoto == null) return null;
+        if (p == null || craftAsBukkitCopy == null) return null;
         try {
-            Object nmsStack = spriteHelperGetPhoto.invoke(null, p);
-            return (ItemStack) craftAsBukkitCopy.invoke(null, nmsStack);
+            net.minecraft.world.item.ItemStack native_ = SpriteItemHelper.getPhoto(p);
+            return (ItemStack) craftAsBukkitCopy.invoke(null, native_);
         } catch (Throwable t) {
             return null;
         }

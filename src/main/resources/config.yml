@@ -1,5 +1,5 @@
 # =========================================================================
-# Hatchery — Classic Pixelmon Day Care breeding
+# Hatchery — Classic Pixelmon ranch-block breeding
 # =========================================================================
 
 storage:
@@ -18,10 +18,11 @@ breeding:
   max-eggs-per-daycare: 1
 
 daycare:
-  # Pixelmon 9.0.7+ replaced ranch blocks with Day Care blocks.
-  # "block" is kept for backwards-compatible single-block configs.
-  block: pixelmon:white_day_care
   blocks:
+    # Pixelmon 9.x ships dyed Day Care blocks instead of a single ranch_block.
+    # All 16 colour variants are matched by default. Placing any of them
+    # registers a Hatchery daycare; right-clicking suppresses Pixelmon's own
+    # Day Care GUI (we cancel the interact event before Pixelmon sees it).
     - pixelmon:black_day_care
     - pixelmon:blue_day_care
     - pixelmon:brown_day_care
@@ -58,6 +59,12 @@ worlds:
     - adventure
     - build
   use-vanilla-pixelmon: []                         # worlds that fall back to Pixelmon's own breeding
+
+gui:
+  # Material used to "fill" non-interactive slots of GUI menus so the
+  # interactive slots stand out. Set to any namespaced block/item ID; falls
+  # back to BLACK_STAINED_GLASS_PANE if unresolvable.
+  filler-item: minecraft:black_stained_glass_pane
 
 satisfaction-levels:
   - { threshold: 0,   name: "Unhappy",  color: "&c", speed-mult: 0.5 }

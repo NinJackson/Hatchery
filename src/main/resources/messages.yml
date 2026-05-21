@@ -19,6 +19,7 @@ breeding:
 hourglass:
   used: "&aBreeding advanced by &f{ticks} ticks&a!"
   no-active-breeding: "&cThis daycare has no active breeding pair."
+  no-permission: "&cYou don't have permission to use this hourglass."
 
 upgrade:
   applied: "&aDaycare upgraded! Radius: &f{radius}&a blocks."

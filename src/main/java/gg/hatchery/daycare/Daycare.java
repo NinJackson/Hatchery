@@ -1,13 +1,16 @@
 package gg.hatchery.daycare;
 
+import com.pixelmonmod.pixelmon.api.pokemon.Pokemon;
+import gg.hatchery.pixelmon.PokemonNbtCodec;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Persistent state for a single Pixelmon Day Care block.
+ * Persistent state for a single ranch-block daycare.
  * Pokemon pair is stored as opaque JSON written/read by PixelmonHook.
  */
 public class Daycare {
@@ -21,6 +24,10 @@ public class Daycare {
     private int progressPoints;
     private int eggCount;
     private String pairJson;   // serialized by PixelmonHook (null if no pair)
+    private transient boolean dirty;
+    private transient Pokemon[] decodedPair;
+    private transient String decodedFromPairJson;
+    private transient long lastBreedingParticleTick = Long.MIN_VALUE;
 
     public Daycare(UUID id, UUID owner, String worldName, int x, int y, int z) {
         this.id = id;
@@ -61,14 +68,62 @@ public class Daycare {
     public int    getProgressPoints() { return progressPoints; }
     public int    getEggCount()       { return eggCount; }
     public String getPairJson()       { return pairJson; }
+    public boolean isDirty()          { return dirty; }
+    public long getLastBreedingParticleTick() { return lastBreedingParticleTick; }
 
-    public void setUpgradeLevel(int v)   { this.upgradeLevel   = v; }
-    public void setProgressPoints(int v) { this.progressPoints = v; }
-    public void setEggCount(int v)       { this.eggCount       = v; }
-    public void setPairJson(String s)    { this.pairJson       = s; }
+    public void setUpgradeLevel(int v) {
+        if (this.upgradeLevel != v) {
+            this.upgradeLevel = v;
+            markDirty();
+        }
+    }
+
+    public void setProgressPoints(int v) {
+        int clamped = Math.max(0, v);
+        if (this.progressPoints != clamped) {
+            this.progressPoints = clamped;
+            markDirty();
+        }
+    }
+
+    public void setEggCount(int v) {
+        int clamped = Math.max(0, v);
+        if (this.eggCount != clamped) {
+            this.eggCount = clamped;
+            markDirty();
+        }
+    }
+
+    public void setPairJson(String s) {
+        if (!Objects.equals(this.pairJson, s)) {
+            this.pairJson = s;
+            this.decodedPair = null;
+            this.decodedFromPairJson = null;
+            markDirty();
+        }
+    }
+
+    public void markDirty() {
+        this.dirty = true;
+    }
+
+    public void clearDirty() {
+        this.dirty = false;
+    }
+
+    public void setLastBreedingParticleTick(long tick) {
+        this.lastBreedingParticleTick = tick;
+    }
 
     public void addProgress(int p) {
-        this.progressPoints += p;
-        if (this.progressPoints < 0) this.progressPoints = 0;
+        setProgressPoints(this.progressPoints + p);
+    }
+
+    public Pokemon[] decodedPair() {
+        if (pairJson == null) return new Pokemon[]{null, null};
+        if (pairJson.equals(decodedFromPairJson) && decodedPair != null) return decodedPair;
+        decodedPair = PokemonNbtCodec.decodePair(pairJson);
+        decodedFromPairJson = pairJson;
+        return decodedPair;
     }
 }

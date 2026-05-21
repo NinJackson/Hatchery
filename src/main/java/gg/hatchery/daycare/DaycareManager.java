@@ -72,7 +72,7 @@ public class DaycareManager {
                 CachedMetaData md = u.getCachedData().getMetaData();
                 String v = md.getMetaValue(metaKey);
                 if (v != null) {
-                    try { return Math.max(base, Integer.parseInt(v)); } catch (NumberFormatException ignored) {}
+                    try { return Math.max(0, Integer.parseInt(v)); } catch (NumberFormatException ignored) {}
                 }
             }
         } catch (Throwable ignored) {
@@ -82,24 +82,12 @@ public class DaycareManager {
     }
 
     public boolean isWorldBlacklisted(String world) {
-        return containsIgnoreCase(plugin.getConfigManager().getMain().getBlacklistedWorlds(), world);
-    }
-
-    public boolean isVanillaBreedingWorld(String world) {
-        return containsIgnoreCase(plugin.getConfigManager().getMain().getVanillaBreedingWorlds(), world);
+        return plugin.getConfigManager().getMain().getBlacklistedWorlds().contains(world);
     }
 
     public Collection<Daycare> all() { return byId.values(); }
 
     public Daycare get(UUID id) { return byId.get(id); }
-
-    private boolean containsIgnoreCase(Collection<String> values, String needle) {
-        if (needle == null) return false;
-        for (String value : values) {
-            if (needle.equalsIgnoreCase(value)) return true;
-        }
-        return false;
-    }
 
     private static String locKey(String world, int x, int y, int z) {
         return world + ":" + x + ":" + y + ":" + z;

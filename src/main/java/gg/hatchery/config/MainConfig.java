@@ -15,7 +15,7 @@ import java.util.Set;
 public class MainConfig {
 
     /* storage */
-    private final String storageType;          // "sqlite" | "mysql"
+    private final String storageType;
     private final String storageFile;
     private final String mysqlHost;
     private final int    mysqlPort;
@@ -29,8 +29,7 @@ public class MainConfig {
     private final int    maxEggsPerDaycare;
 
     /* daycare */
-    private final String daycareBlock;
-    private final List<String> daycareBlocks;
+    private final Set<String> daycareBlocks;     // normalized lowercase namespaced IDs
     private final int    maxPerPlayerDefault;
     private final String permissionMetaKey;
     private final int    baseScanRadius;
@@ -54,6 +53,9 @@ public class MainConfig {
     private final ParticleConfig breedingParticle;
     private final ParticleConfig eggReadyParticle;
 
+    /* gui */
+    private final String guiFillerItem;
+
     public MainConfig(YamlConfiguration y) {
         this.storageType     = y.getString("storage.type", "sqlite");
         this.storageFile     = y.getString("storage.file", "data.db");
@@ -67,8 +69,24 @@ public class MainConfig {
         this.basePointsNeeded    = y.getInt("breeding.base-points-needed", 100);
         this.maxEggsPerDaycare   = y.getInt("breeding.max-eggs-per-daycare", 1);
 
-        this.daycareBlock        = y.getString("daycare.block", "pixelmon:white_day_care");
-        this.daycareBlocks       = loadDaycareBlocks(y, daycareBlock);
+        // ---- daycare.blocks (list)  with legacy fallback to daycare.block (single) ----
+        Set<String> blocks = new LinkedHashSet<>();
+        List<String> listed = y.getStringList("daycare.blocks");
+        if (listed != null) {
+            for (String s : listed) {
+                if (s != null && !s.isEmpty()) blocks.add(s.toLowerCase(Locale.ROOT));
+            }
+        }
+        String legacy = y.getString("daycare.block", null);
+        if (legacy != null && !legacy.isEmpty()) blocks.add(legacy.toLowerCase(Locale.ROOT));
+        if (blocks.isEmpty()) {
+            // Fall back to all 16 Pixelmon day_care colour variants.
+            for (String c : DEFAULT_DAYCARE_COLOURS) {
+                blocks.add("pixelmon:" + c + "_day_care");
+            }
+        }
+        this.daycareBlocks = Collections.unmodifiableSet(blocks);
+
         this.maxPerPlayerDefault = y.getInt   ("daycare.max-per-player-default", 1);
         this.permissionMetaKey   = y.getString("daycare.permission-meta-key", "hatchery.maxdaycares");
         this.baseScanRadius      = y.getInt   ("daycare.base-scan-radius", 5);
@@ -87,28 +105,8 @@ public class MainConfig {
 
         this.breedingParticle = new ParticleConfig(y.getConfigurationSection("particles.during-breeding"));
         this.eggReadyParticle = new ParticleConfig(y.getConfigurationSection("particles.egg-ready"));
-    }
 
-    private List<String> loadDaycareBlocks(YamlConfiguration y, String legacyBlock) {
-        Set<String> blocks = new LinkedHashSet<>();
-        for (String id : y.getStringList("daycare.blocks")) {
-            String normalized = normalizeBlockId(id);
-            if (!normalized.isEmpty()) blocks.add(normalized);
-        }
-
-        String legacy = normalizeBlockId(legacyBlock);
-        if (!legacy.isEmpty() && !"pixelmon:ranch_block".equals(legacy)) {
-            blocks.add(legacy);
-        }
-
-        if (blocks.isEmpty()) {
-            blocks.add("pixelmon:white_day_care");
-        }
-        return Collections.unmodifiableList(new ArrayList<>(blocks));
-    }
-
-    private String normalizeBlockId(String id) {
-        return id == null ? "" : id.trim().toLowerCase(Locale.ROOT);
+        this.guiFillerItem = y.getString("gui.filler-item", "minecraft:black_stained_glass_pane");
     }
 
     private List<SatisfactionLevel> loadSatisfactionLevels(YamlConfiguration y) {
@@ -140,7 +138,6 @@ public class MainConfig {
         return current;
     }
 
-    /* getters */
     public String getStorageType()           { return storageType; }
     public String getStorageFile()           { return storageFile; }
     public String getMysqlHost()             { return mysqlHost; }
@@ -151,8 +148,10 @@ public class MainConfig {
     public int    getTickIntervalSeconds()   { return tickIntervalSeconds; }
     public int    getBasePointsNeeded()      { return basePointsNeeded; }
     public int    getMaxEggsPerDaycare()     { return maxEggsPerDaycare; }
-    public String getDaycareBlock()          { return daycareBlock; }
-    public List<String> getDaycareBlocks()   { return daycareBlocks; }
+    public Set<String> getDaycareBlocks()    { return daycareBlocks; }
+    /** Legacy single-block accessor — returns the first configured block id. */
+    @Deprecated
+    public String getDaycareBlock()          { return daycareBlocks.isEmpty() ? "" : daycareBlocks.iterator().next(); }
     public int    getMaxPerPlayerDefault()   { return maxPerPlayerDefault; }
     public String getPermissionMetaKey()     { return permissionMetaKey; }
     public int    getBaseScanRadius()        { return baseScanRadius; }
@@ -167,8 +166,8 @@ public class MainConfig {
     public List<SatisfactionLevel> getSatisfactionLevels() { return satisfactionLevels; }
     public ParticleConfig getBreedingParticle() { return breedingParticle; }
     public ParticleConfig getEggReadyParticle() { return eggReadyParticle; }
+    public String getGuiFillerItem()        { return guiFillerItem; }
 
-    /* nested */
     public static final class SatisfactionLevel {
         public final int    threshold;
         public final String name;
@@ -197,7 +196,7 @@ public class MainConfig {
             }
             this.enabled         = s.getBoolean("enabled", true);
             Particle p;
-            try { p = Particle.valueOf(s.getString("type", "HEART").toUpperCase()); }
+            try { p = Particle.valueOf(s.getString("type", "HEART").toUpperCase(Locale.ROOT)); }
             catch (Exception e) { p = Particle.HEART; }
             this.type            = p;
             this.count           = s.getInt("count", 3);
@@ -207,4 +206,12 @@ public class MainConfig {
             this.offsetZ         = s.getDouble("offset.z", 0.5);
         }
     }
+
+    /** Default Pixelmon day_care block colours (Pixelmon 9.x). */
+    private static final String[] DEFAULT_DAYCARE_COLOURS = {
+            "black", "blue", "brown", "cyan",
+            "gray", "green", "light_blue", "light_gray",
+            "lime", "magenta", "orange", "pink",
+            "purple", "red", "white", "yellow"
+    };
 }

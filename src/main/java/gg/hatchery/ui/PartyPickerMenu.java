@@ -13,11 +13,14 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class PartyPickerMenu implements HatcheryMenu {
 
-    public static final String TITLE_MARKER = "§8​Choose Pokemon";
+    private static final int SIZE      = 9;
     private static final int BACK_SLOT = 8;
 
     private final Hatchery plugin;
@@ -31,12 +34,14 @@ public class PartyPickerMenu implements HatcheryMenu {
         this.daycare = daycare;
         this.parentSlotIndex = parentSlotIndex;
         this.party = plugin.getPixelmonHook().getParty(viewer);
-        this.inv = Bukkit.createInventory(viewer, 9,
-                MessagesConfig.color("§8") + TITLE_MARKER);
-        for (int i = 0; i < 6; i++) {
-            inv.setItem(i, renderSlot(i));
-        }
-        inv.setItem(BACK_SLOT, simple(Material.ARROW, "§7Back", Arrays.asList()));
+        this.inv = Bukkit.createInventory(viewer, SIZE,
+                MessagesConfig.color("§8Choose Pokemon"));
+
+        ItemStack filler = makeFiller();
+        for (int i = 0; i < SIZE; i++) inv.setItem(i, filler);
+
+        for (int i = 0; i < 6; i++) inv.setItem(i, renderSlot(i));
+        inv.setItem(BACK_SLOT, simple(Material.ARROW, "§7Back", Collections.emptyList()));
     }
 
     public static void open(Hatchery plugin, Player viewer, Daycare daycare, int parentSlotIndex) {
@@ -46,6 +51,20 @@ public class PartyPickerMenu implements HatcheryMenu {
     }
 
     @Override public Inventory getInventory() { return inv; }
+
+    private ItemStack makeFiller() {
+        String id = plugin.getConfigManager().getMain().getGuiFillerItem();
+        Material mat = Material.matchMaterial(id);
+        if (mat == null) mat = Material.BLACK_STAINED_GLASS_PANE;
+        ItemStack stack = new ItemStack(mat);
+        ItemMeta meta = stack.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(" ");
+            meta.setLore(Collections.emptyList());
+            stack.setItemMeta(meta);
+        }
+        return stack;
+    }
 
     private ItemStack renderSlot(int slot) {
         Pokemon p = party != null && slot < party.length ? party[slot] : null;
@@ -82,7 +101,13 @@ public class PartyPickerMenu implements HatcheryMenu {
         Pokemon chosen = party[slot];
         if (chosen == null) return;
 
-        // Remove from party, then reopen DaycareMenu and place the Pokemon.
+        PixelmonHook hook = plugin.getPixelmonHook();
+        Pokemon current = hook.partySlot(viewer, slot);
+        if (!hook.isSamePokemon(chosen, current)) {
+            viewer.sendMessage("§cThat party slot changed. Please choose the Pokemon again.");
+            PartyPickerMenu.open(plugin, viewer, daycare, parentSlotIndex);
+            return;
+        }
         if (!plugin.getPixelmonHook().removeFromPartySlot(viewer, slot)) {
             viewer.sendMessage("§cCould not retrieve that Pokemon.");
             return;
@@ -90,16 +115,16 @@ public class PartyPickerMenu implements HatcheryMenu {
         DaycareMenu.open(plugin, viewer, daycare);
         HatcheryMenu open = plugin.getMenuManager().get(viewer);
         if (open instanceof DaycareMenu) {
-            ((DaycareMenu) open).setParent(parentSlotIndex, chosen);
+            ((DaycareMenu) open).setParent(parentSlotIndex, current);
         }
     }
 
-    private ItemStack simple(Material mat, String name, java.util.List<String> lore) {
+    private ItemStack simple(Material mat, String name, List<String> lore) {
         ItemStack i = new ItemStack(mat);
         ItemMeta m = i.getItemMeta();
         if (m != null) {
             m.setDisplayName(MessagesConfig.color(name));
-            java.util.List<String> coloured = new java.util.ArrayList<>();
+            List<String> coloured = new ArrayList<>();
             for (String l : lore) coloured.add(MessagesConfig.color(l));
             m.setLore(coloured);
             i.setItemMeta(m);

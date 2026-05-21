@@ -4,9 +4,13 @@ import gg.hatchery.Hatchery;
 import gg.hatchery.config.MainConfig;
 import gg.hatchery.daycare.Daycare;
 import gg.hatchery.pixelmon.PixelmonHook;
+import org.bukkit.Location;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Ticks active daycares: accrues progress, generates eggs, fires particles.
@@ -15,6 +19,8 @@ public class BreedingEngine {
 
     private final Hatchery plugin;
     private final EnvironmentScanner scanner;
+    private final Map<UUID, Integer> envPointsCache = new ConcurrentHashMap<>();
+    private final Map<UUID, String> envPointsKey = new ConcurrentHashMap<>();
     private BukkitTask task;
 
     public BreedingEngine(Hatchery plugin) {
@@ -23,6 +29,34 @@ public class BreedingEngine {
     }
 
     public EnvironmentScanner scanner() { return scanner; }
+
+    public int envPointsFor(Daycare daycare, List<String> types) {
+        String key = String.join(",", types.stream().sorted().toList()) + "@" + daycare.getUpgradeLevel();
+        if (!key.equals(envPointsKey.get(daycare.getId()))) {
+            envPointsCache.remove(daycare.getId());
+            envPointsKey.put(daycare.getId(), key);
+        }
+        return envPointsCache.computeIfAbsent(daycare.getId(),
+                id -> scanner.totalPoints(daycare, types));
+    }
+
+    public void invalidateEnvCache(Daycare daycare) {
+        envPointsCache.remove(daycare.getId());
+    }
+
+    public boolean forceEgg(Daycare daycare) {
+        MainConfig main = plugin.getConfigManager().getMain();
+        if (daycare.getPairJson() == null) return false;
+        if (daycare.getEggCount() >= main.getMaxEggsPerDaycare()) return false;
+        if (!plugin.getPixelmonHook().isCompatible(daycare.decodedPair()[0], daycare.decodedPair()[1])) return false;
+
+        daycare.setProgressPoints(0);
+        daycare.setEggCount(daycare.getEggCount() + 1);
+        plugin.getPixelmonHook().notifyEggReady(daycare);
+        plugin.getStorage().saveDaycare(daycare);
+        plugin.getMenuManager().rebuildDaycare(daycare);
+        return true;
+    }
 
     public void start() {
         int seconds = Math.max(1, plugin.getConfigManager().getMain().getTickIntervalSeconds());
@@ -40,40 +74,63 @@ public class BreedingEngine {
         int basePoints = main.getBasePointsNeeded();
 
         for (Daycare d : plugin.getDaycareManager().all()) {
-            if (plugin.getDaycareManager().isVanillaBreedingWorld(d.getWorldName())) continue;
-            if (!d.isChunkLoaded())     continue;   // requirement: pause when chunk unloaded
-            if (d.getPairJson() == null) continue;   // no active pair
-            if (d.getEggCount() >= main.getMaxEggsPerDaycare()) continue;
-
-            List<String> types = hook.getPairTypes(d.getPairJson());
-            if (types.isEmpty()) continue;
-
-            int envPoints = scanner.totalPoints(d, types);
-            MainConfig.SatisfactionLevel sat = main.resolveSatisfaction(envPoints);
-
-            int gained = (int) Math.max(1, Math.round(envPoints * sat.speedMultiplier / 10.0));
-            d.addProgress(gained);
-
-            // Particles during breeding
-            MainConfig.ParticleConfig pc = main.getBreedingParticle();
-            if (pc.enabled && d.toLocation() != null) {
-                d.toLocation().getWorld().spawnParticle(
-                        pc.type, d.toLocation().clone().add(pc.offsetX, pc.offsetY, pc.offsetZ),
-                        pc.count);
-            }
-
-            if (d.getProgressPoints() >= basePoints) {
-                d.setProgressPoints(0);
-                d.setEggCount(d.getEggCount() + 1);
-                hook.notifyEggReady(d);
-                MainConfig.ParticleConfig pe = main.getEggReadyParticle();
-                if (pe.enabled && d.toLocation() != null) {
-                    d.toLocation().getWorld().spawnParticle(
-                            pe.type, d.toLocation().clone().add(pe.offsetX, pe.offsetY, pe.offsetZ),
-                            pe.count);
-                }
-            }
-            plugin.getStorage().saveDaycare(d);
+            tickDaycare(d, main, hook, basePoints);
         }
+    }
+
+    private void tickDaycare(Daycare daycare, MainConfig main, PixelmonHook hook, int basePoints) {
+        if (!daycare.isChunkLoaded()) return;   // requirement: pause when chunk unloaded
+        if (daycare.getPairJson() == null) return;   // no active pair
+        if (daycare.getEggCount() >= main.getMaxEggsPerDaycare()) return;
+
+        List<String> types = hook.getPairTypes(daycare);
+        if (types.isEmpty()) return;
+
+        int envPoints = envPointsFor(daycare, types);
+        MainConfig.SatisfactionLevel sat = main.resolveSatisfaction(envPoints);
+
+        int gained = progressGainFor(sat);
+        daycare.addProgress(gained);
+
+        spawnBreedingParticle(daycare, main.getBreedingParticle());
+
+        if (daycare.getProgressPoints() >= basePoints) {
+            daycare.setProgressPoints(0);
+            daycare.setEggCount(daycare.getEggCount() + 1);
+            hook.notifyEggReady(daycare);
+            spawnParticle(daycare, main.getEggReadyParticle());
+        }
+
+        if (daycare.isDirty()) {
+            plugin.getStorage().saveDaycare(daycare);
+            plugin.getMenuManager().rebuildDaycare(daycare);
+        }
+    }
+
+    private int progressGainFor(MainConfig.SatisfactionLevel sat) {
+        return Math.max(1, (int) Math.round(sat.speedMultiplier));
+    }
+
+    private void spawnBreedingParticle(Daycare daycare, MainConfig.ParticleConfig particle) {
+        if (!particle.enabled) return;
+        long now = System.currentTimeMillis();
+        long intervalMillis = Math.max(0, particle.intervalSeconds) * 1000L;
+        if (daycare.getLastBreedingParticleTick() != Long.MIN_VALUE
+                && now - daycare.getLastBreedingParticleTick() < intervalMillis) {
+            return;
+        }
+        if (spawnParticle(daycare, particle)) {
+            daycare.setLastBreedingParticleTick(now);
+        }
+    }
+
+    private boolean spawnParticle(Daycare daycare, MainConfig.ParticleConfig particle) {
+        if (!particle.enabled) return false;
+        Location loc = daycare.toLocation();
+        if (loc == null || loc.getWorld() == null) return false;
+        loc.getWorld().spawnParticle(
+                particle.type, loc.clone().add(particle.offsetX, particle.offsetY, particle.offsetZ),
+                particle.count);
+        return true;
     }
 }

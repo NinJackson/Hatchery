@@ -2,7 +2,7 @@ name: Hatchery
 version: '${version}'
 main: gg.hatchery.Hatchery
 api-version: '1.20'
-description: Classic Pixelmon Day Care breeding system, fully configurable.
+description: Classic Pixelmon ranch-block breeding system, fully configurable.
 softdepend: [Pixelmon, LuckPerms, PlaceholderAPI]
 load: POSTWORLD
 

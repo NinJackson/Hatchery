@@ -1,7 +1,10 @@
 package gg.hatchery.listeners;
 
 import gg.hatchery.Hatchery;
+import gg.hatchery.commands.HatcheryItems;
+import gg.hatchery.config.MainConfig;
 import gg.hatchery.daycare.Daycare;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -9,9 +12,11 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class DaycareLifecycleListener implements Listener {
 
@@ -24,10 +29,6 @@ public class DaycareLifecycleListener implements Listener {
         if (!isDaycareBlock(e.getBlock())) return;
 
         Player p = e.getPlayer();
-        if (plugin.getDaycareManager().isVanillaBreedingWorld(e.getBlock().getWorld().getName())) {
-            return;
-        }
-
         if (plugin.getDaycareManager().isWorldBlacklisted(e.getBlock().getWorld().getName())) {
             p.sendMessage(plugin.getConfigManager().getMessages().get("daycare.disabled-world"));
             e.setCancelled(true);
@@ -42,7 +43,7 @@ public class DaycareLifecycleListener implements Listener {
             return;
         }
 
-        Daycare d = plugin.getDaycareManager().register(p.getUniqueId(), e.getBlock().getLocation());
+        plugin.getDaycareManager().register(p.getUniqueId(), e.getBlock().getLocation());
         p.sendMessage(plugin.getConfigManager().getMessages().get("daycare.placed"));
     }
 
@@ -51,20 +52,28 @@ public class DaycareLifecycleListener implements Listener {
         Daycare d = plugin.getDaycareManager().atLocation(e.getBlock().getLocation());
         if (d == null) return;
 
-        // Optionally drop accumulated upgrade items
-        if (plugin.getConfigManager().getMain().isUpgradeDropOnBreak() && d.getUpgradeLevel() > 0) {
-            // TODO: drop d.getUpgradeLevel() copies of the upgrade item
+        MainConfig main = plugin.getConfigManager().getMain();
+        if (main.isUpgradeDropOnBreak() && d.getUpgradeLevel() > 0) {
+            Location dropLoc = e.getBlock().getLocation().add(0.5, 0.5, 0.5);
+            ItemStack stack = HatcheryItems.upgradeItem(plugin, d.getUpgradeLevel());
+            if (stack != null && dropLoc.getWorld() != null) {
+                dropLoc.getWorld().dropItemNaturally(dropLoc, stack);
+            }
         }
         plugin.getDaycareManager().unregister(d);
         e.getPlayer().sendMessage(plugin.getConfigManager().getMessages().get("daycare.removed"));
     }
 
+    /**
+     * A block counts as a daycare if its namespaced material key matches any of
+     * the IDs in {@code daycare.blocks} (or the legacy {@code daycare.block}).
+     * Defaults to all 16 Pixelmon {@code <colour>_day_care} variants.
+     */
     private boolean isDaycareBlock(Block b) {
         if (b.getType() == Material.AIR) return false;
-        String actual = b.getType().getKey().toString().toLowerCase(Locale.ROOT);
-        for (String expected : plugin.getConfigManager().getMain().getDaycareBlocks()) {
-            if (actual.equals(expected)) return true;
-        }
-        return false;
+        Set<String> expected = plugin.getConfigManager().getMain().getDaycareBlocks();
+        if (expected.isEmpty()) return false;
+        String key = b.getType().getKey().toString().toLowerCase(Locale.ROOT);
+        return expected.contains(key);
     }
 }

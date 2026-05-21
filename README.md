@@ -1,194 +1,97 @@
 # Hatchery
 
-**Classic Pixelmon Day Care breeding — the "OldSchool" ranch-style breeding
-experience, rebuilt from scratch and fully configurable.**
+A daycare/breeding plugin for **Pixelmon on Arclight** — replaces vanilla
+Pixelmon's built-in Day Care with a server-managed alternative. Each Pixelmon
+**`<colour>_day_care`** block a player places is registered, owned, and ticked
+by Hatchery; environment blocks around it contribute type-based "environment
+points," progress accrues over time, and an egg is generated when progress
+crosses a configurable threshold. The vanilla Pixelmon Day Care GUI is
+suppressed for any block Hatchery manages.
 
-Hatchery is an open-source Bukkit plugin (built for **Arclight 1.20.2**, which
-bridges Bukkit ↔ Forge) that recreates the pre-modern, ranch-block-era Pixelmon
-breeding loop on top of modern Pixelmon **Day Care** blocks. Players place a Day
-Care, add a compatible pair from their party, shape the **environment** around
-it to speed things up, and collect the egg from a GUI. Every numeric and
-behavioural lever is exposed through YAML.
+**Version:** `1.1.2`
+**Tested against:** Minecraft 1.20.2 · Arclight 1.20.2-1.0.3 · Pixelmon 1.20.2-9.2.10
 
-> Independent fan project. Not affiliated with Mojang, Microsoft, or the
-> Pixelmon Modding Group. Pixelmon and the Minecraft server jar are **not**
-> bundled — you supply them to build (see [`libs/README.md`](libs/README.md)).
-
----
-
-## Table of contents
-
-- [Features](#features)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Commands](#commands)
-- [Permissions](#permissions)
-- [Configuration](#configuration)
-- [How breeding works](#how-breeding-works)
-- [Building from source](#building-from-source)
-- [Project status & roadmap](#project-status--roadmap)
-- [Compatibility & known limitations](#compatibility--known-limitations)
-- [Contributing](#contributing)
-- [License](#license)
+> 📌 **Block change in 1.1.1.** Pixelmon 9.x no longer ships `ranch_block`;
+> the modern equivalent is `pixelmon:<colour>_day_care` (16 dyed variants).
+> Hatchery 1.1.1 now binds to all 16 colours by default and short-circuits
+> Pixelmon's own Day Care interaction. See `CONFIG.md` for the full list
+> + how to narrow it.
 
 ---
 
-## Documentation
+## Docs at a glance
 
-Full docs live in two places (same content):
-
-- 📖 **[Wiki](../../wiki)** — browsable, cross-linked.
-- 📁 **[`docs/wiki/`](docs/wiki/)** — in-repo mirror (always available), plus
-  the player-facing **[`docs/PLAYER_GUIDE.md`](docs/PLAYER_GUIDE.md)**.
-
-Start at **[Installation](docs/wiki/Installation.md)** ·
-**[Configuration](docs/wiki/Configuration.md)** ·
-**[Breeding Mechanics](docs/wiki/Breeding-Mechanics.md)** ·
-**[Environment Points](docs/wiki/Environment-Points.md)**.
+| Doc | Audience | What's in it |
+|---|---|---|
+| **[docs/PLAYER-GUIDE.md](./docs/PLAYER-GUIDE.md)** | Players | Placing a Day Care block, using the GUI, breeding mechanics, hourglasses, upgrades, eggs, `/daycares` |
+| **[docs/ADMIN-GUIDE.md](./docs/ADMIN-GUIDE.md)**   | Admins  | `/hatchery` command reference, permissions, LuckPerms meta, storage, ops procedures |
+| **[docs/CONFIG.md](./docs/CONFIG.md)**             | Admins  | Per-key reference for all four YAML config files |
+| **[TOUCHUP-PLAN.md](./TOUCHUP-PLAN.md)**           | Devs    | Historical 1.0.0 → 1.1.0 audit + plan (now landed) |
 
 ---
 
-## Features
+## Install
 
-- **Day Care breeding blocks** — register a breeding station by placing any
-  configured Pixelmon Day Care block (all 16 colours supported out of the box).
-- **Strict pairing** — egg-group + gender + species compatibility, Ditto rules,
-  and rejection of undiscovered Pokémon, using Pixelmon's own API.
-- **Environment scoring** — blocks around the Day Care grant *points* toward the
-  egg, weighted **per Pokémon type** (e.g. water blocks help Water types). Fully
-  remappable in `environment-points.yml`.
-- **Satisfaction tiers** — accumulated points map to named tiers (Unhappy →
-  Blissful) with configurable thresholds and breeding-speed multipliers.
-- **GUI-driven** — add Pokémon from a party picker, view environment points, and
-  collect the egg from a clean inventory menu (real Pokémon sprite items).
-- **Per-player daycare caps** — default cap with **LuckPerms meta** override
-  (`hatchery.maxdaycares`) per player or group.
-- **World rules** — blacklist worlds, or let specific worlds fall back to
-  Pixelmon's own breeding.
-- **Hourglasses** — tiered consumable items that fast-forward breeding ticks.
-- **Environment Upgrade item** — right-click to expand a daycare's scan radius,
-  with configurable max levels and drop-on-break.
-- **Pluggable storage** — SQLite or MySQL, toggled in config (HikariCP pooled).
-- **Every string configurable** — all player-facing text in `messages.yml`.
-- **Mappings-agnostic** — Pixelmon/NMS access is reflective, so it survives
-  remapping (Arclight) and most Pixelmon point releases.
+1. Drop `Hatchery-1.1.2.jar` into `plugins/` on a server running:
+   - Minecraft **1.20.2**
+   - **Arclight** (Forge → Bukkit hybrid)
+   - **Pixelmon** 1.20.2-9.2.10
+2. Start once to generate the default configs under `plugins/Hatchery/`.
+3. Edit configs to taste, then `/hatchery reload`.
 
-## Requirements
+**Soft dependencies** (auto-detected if installed): `LuckPerms`, `PlaceholderAPI`.
 
-| | |
-|---|---|
-| Server | **Arclight 1.20.2** (Forge + Bukkit hybrid). Paper/Spigot 1.20.2 works for non-Pixelmon parts but Pixelmon itself requires Forge/Arclight. |
-| Java | **17** |
-| Pixelmon | **9.2.x** (developed against 1.20.2 / 9.2.10) |
-| Soft-deps | LuckPerms (per-player caps via meta), PlaceholderAPI |
+### Build from source
 
-## Installation
-
-1. Build the jar (see [Building from source](#building-from-source)) or grab a
-   release.
-2. Drop `Hatchery-<version>.jar` into your server's `plugins/` folder.
-3. Start the server once to generate the config files in `plugins/Hatchery/`.
-4. Edit the configs to taste and run `/hatchery reload`.
-
-## Commands
-
-| Command | Aliases | Description |
-|---------|---------|-------------|
-| `/daycares` | `/dc` | Open your daycare list / GUI. |
-| `/hatchery <…>` | `/osb`, `/oldschoolbreeding` | Admin: `reload`, `list`, `give-hourglass`, `give-upgrade`, `force-egg`, `remove`. |
-
-## Permissions
-
-| Node | Default | Purpose |
-|------|---------|---------|
-| `hatchery.use` | `true` | Use daycares. |
-| `hatchery.admin` | `op` | Full admin access (`/hatchery`). |
-| `hatchery.hourglass.bronze` | `true` | Use bronze hourglasses. |
-| `hatchery.hourglass.silver` | `true` | Use silver hourglasses. |
-| `hatchery.hourglass.gold` | `true` | Use gold hourglasses. |
-| `hatchery.maxdaycares` *(LuckPerms meta)* | — | Per-player/group override of the max-daycares cap. |
-
-## Configuration
-
-Generated in `plugins/Hatchery/`:
-
-| File | Controls |
-|------|----------|
-| `config.yml` | Storage backend, breeding tick interval & points needed, Day Care block IDs, per-player cap + LP meta key, scan radius, the Upgrade item, world rules, satisfaction tiers, particles. |
-| `environment-points.yml` | Per-Pokémon-type block→points map (all 18 types) plus universal bonuses. |
-| `hourglasses.yml` | Hourglass tiers (base item, name, lore, ticks-added, consume, permission). |
-| `messages.yml` | Every player-facing string, `{placeholder}` substitution, prefix. |
-
-See the [**Wiki**](../../wiki) for a full key-by-key reference, and
-[`docs/PLAYER_GUIDE.md`](docs/PLAYER_GUIDE.md) for the player-facing explanation.
-
-## How breeding works
-
-1. **Place a Day Care block** (any configured colour) → it registers as *your*
-   daycare (subject to your world + cap).
-2. **Right-click it** → GUI. Add two party Pokémon; they must pass strict
-   compatibility (egg group, gender, species/Ditto rules).
-3. Each breeding tick (`tick-interval-seconds`), Hatchery scans blocks within
-   the daycare's radius and awards **environment points** based on the pair's
-   types (`environment-points.yml`). Points → a **satisfaction tier** with a
-   **speed multiplier**.
-4. When accumulated progress reaches `base-points-needed`, an **egg is ready** —
-   collect it from the GUI.
-5. Optionally **right-click an Hourglass** to fast-forward ticks, or apply an
-   **Environment Upgrade** to widen the scan radius.
-
-## Building from source
-
-Hatchery uses **Gradle (8.7) + the Shadow plugin** and **Java 17**. A Gradle
-wrapper is not committed; use a local Gradle 8.7 (the dev setup vendors one).
-
-```bash
-# 1. Supply the proprietary compile-only jars (see libs/README.md)
-#    libs/Pixelmon-1.20.2-9.2.10.jar
-#    libs/minecraft-server-1.20.2-srg.jar
-
-# 2. Build the shaded plugin jar
-gradle shadowJar          # or: ./gradlew shadowJar  if you add a wrapper
-
-# 3. Output
-#    build/libs/Hatchery-<version>.jar
+```sh
+cd /root/Hatchery
+./gradle-8.7/bin/gradle shadowJar
+# → build/libs/Hatchery-1.1.2.jar
 ```
 
-No NMS is called directly; SQLite/MySQL/Hikari/SLF4J are shaded & relocated
-under `gg.hatchery.libs.*`.
+---
 
-## Project status & roadmap
+## What's in 1.1.2
 
-**Working:** config + SQLite/MySQL storage, daycare register/unregister
-(world-blacklist + LP-meta cap aware), breeding tick loop (pauses on chunk
-unload), environment scanner, real Pixelmon hook (party access, reflective
-Pokémon NBT codec, strict compat, `makeEgg`), Daycare/Party GUIs with real
-sprites, `/daycares` & `/hatchery`, all messages via `messages.yml`.
+- 🟢 **GUI polish** — every non-interactive slot in the Daycare and Party
+  Picker menus is now filled with a configurable filler block (default
+  `minecraft:black_stained_glass_pane`) so the interactive Parent / Status
+  / Egg / Back slots stand out cleanly.
+- 🟢 **Title cleanup** — the legacy zero-width-space marker in inventory
+  titles is gone. Titles now render as plain "Daycare" / "Choose Pokemon"
+  instead of the doubled-with-tofu-glyph string. Menu identification
+  continues to go through `MenuManager` (already tracked by player UUID).
+- ✏️ **Config: new `gui.filler-item` key** in `config.yml`. Set it to any
+  namespaced block ID, e.g. `pixelmon:apricorn_log`.
 
-**Planned (v0.3+):** hourglass right-click consumption, upgrade-item apply +
-drop-on-break payout, incremental environment recalculation (currently full
-rescan per tick), particle polish, the remaining `/hatchery` admin subcommands,
-PlaceholderAPI message integration. See [`PLAN.md`](PLAN.md) and the
-[Roadmap wiki page](../../wiki/Roadmap).
+## What's in 1.1.1
 
-## Compatibility & known limitations
+- 🟢 **Day Care block migration** — Hatchery now binds to Pixelmon 9.x's
+  `pixelmon:<colour>_day_care` blocks (all 16 dyed variants). The legacy
+  `daycare.block: pixelmon:ranch_block` config key kept generating orphan
+  daycares because the block doesn't exist in 9.x.
+- 🟢 **Pixelmon Day Care GUI suppression** — right-clicking a Hatchery-managed
+  block cancels the Bukkit `PlayerInteractEvent` before Pixelmon's
+  `DayCareBlock#use()` runs, so the player only sees Hatchery's menu.
+- ✏️ **Config: `daycare.block` → `daycare.blocks` (list).** Backward-compatible:
+  the legacy single-string key is still accepted and merged into the list.
 
-- Designed for **Arclight 1.20.2** (reflective NMS = mappings-agnostic; also fine
-  if a future Paper path is used for vanilla bits).
-- **Pixelmon API drift:** a major Pixelmon bump (e.g. 9.3+/1.21) may shift
-  `EggGroup.canBreedWith` etc.; `PixelmonHook` is the single file to adjust.
-- Full environment rescan each tick — comfortable for ≲50 active daycares;
-  larger scales want point caching (planned).
-- **Party only** — pulls from the player's 6-slot party, not PC storage.
+## What landed in 1.1.0
 
-## Contributing
+- Hourglass + upgrade right-click application
+- Full admin command suite (`give-hourglass`, `give-upgrade`, `force-egg`, `remove`)
+- `daycare.upgrade.drop-on-break` actually drops items
+- `makeEgg` mother-selection fix
+- `hatchery.maxdaycares` LP meta now authoritative
+- Env-points cache + `BlockChangeListener` invalidation
+- Dirty-flag save throttle
+- Particle interval honoured
 
-Issues and PRs welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md). The "Planned"
-items above make good first contributions; `PixelmonHook` isolates all
-Pixelmon-API coupling.
+Full plan in [`TOUCHUP-PLAN.md`](./TOUCHUP-PLAN.md).
 
-## License
+---
 
-[MIT](LICENSE) © 2026 NinJackson. Pixelmon/Pokémon/Minecraft are trademarks of
-their respective owners; this is an independent fan project and bundles none of
-their code.
+## License & credits
+
+In-house plugin maintained by the Oracion team. Pixelmon API surfaces used
+under their public mod ABI; Pixelmon itself is © PixelmonMod.

@@ -18,6 +18,17 @@ public class MenuManager {
     public void untrack(Player p)               { open.remove(p.getUniqueId()); }
     public HatcheryMenu get(Player p)           { return open.get(p.getUniqueId()); }
 
+    public void rebuildDaycare(gg.hatchery.daycare.Daycare daycare) {
+        for (HatcheryMenu menu : open.values()) {
+            if (menu instanceof DaycareMenu) {
+                DaycareMenu daycareMenu = (DaycareMenu) menu;
+                if (daycareMenu.daycare().getId().equals(daycare.getId())) {
+                    daycareMenu.rebuild();
+                }
+            }
+        }
+    }
+
     public boolean isHatcheryMenu(Inventory inv) {
         if (inv == null) return false;
         for (HatcheryMenu m : open.values()) {

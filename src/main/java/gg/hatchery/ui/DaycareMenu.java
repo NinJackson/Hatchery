@@ -17,15 +17,16 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Main daycare GUI: two parent slots, status panel, and egg collect button.
+ * Main daycare GUI: filler-padded chest with two parent slots, status panel,
+ * and an egg-collect button when an egg is ready.
  */
 public class DaycareMenu implements HatcheryMenu {
 
-    public static final String TITLE_MARKER = "§8​Daycare";
-
+    private static final int SIZE          = 27;
     private static final int SLOT_PARENT_A = 11;
     private static final int SLOT_PARENT_B = 15;
     private static final int SLOT_STATUS   = 22;
@@ -39,8 +40,8 @@ public class DaycareMenu implements HatcheryMenu {
         this.plugin = plugin;
         this.daycare = daycare;
         MessagesConfig msgs = plugin.getConfigManager().getMessages();
-        this.inv = Bukkit.createInventory(viewer, 27,
-                MessagesConfig.color(msgs.raw("gui.title")) + TITLE_MARKER);
+        this.inv = Bukkit.createInventory(viewer, SIZE,
+                MessagesConfig.color(msgs.raw("gui.title")));
         rebuild();
     }
 
@@ -54,9 +55,12 @@ public class DaycareMenu implements HatcheryMenu {
 
     public Daycare daycare() { return daycare; }
 
-    /** Re-renders the menu. */
+    /** Re-renders the menu: fills every slot with the configured filler,
+     *  then overlays the interactive items. */
     public void rebuild() {
-        inv.clear();
+        ItemStack filler = makeFiller();
+        for (int i = 0; i < SIZE; i++) inv.setItem(i, filler);
+
         PixelmonHook hook = plugin.getPixelmonHook();
         Pokemon[] pair = PokemonNbtCodec.decodePair(daycare.getPairJson());
 
@@ -66,6 +70,20 @@ public class DaycareMenu implements HatcheryMenu {
         if (daycare.getEggCount() > 0) {
             inv.setItem(SLOT_EGG, renderEggButton());
         }
+    }
+
+    private ItemStack makeFiller() {
+        String id = plugin.getConfigManager().getMain().getGuiFillerItem();
+        Material mat = Material.matchMaterial(id);
+        if (mat == null) mat = Material.BLACK_STAINED_GLASS_PANE;
+        ItemStack stack = new ItemStack(mat);
+        ItemMeta meta = stack.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(" ");
+            meta.setLore(Collections.emptyList());
+            stack.setItemMeta(meta);
+        }
+        return stack;
     }
 
     private ItemStack renderParent(PixelmonHook hook, Pokemon p, String label) {
@@ -142,6 +160,7 @@ public class DaycareMenu implements HatcheryMenu {
         if (slot == SLOT_PARENT_A) handleParent(viewer, 0, e.isShiftClick());
         else if (slot == SLOT_PARENT_B) handleParent(viewer, 1, e.isShiftClick());
         else if (slot == SLOT_EGG && daycare.getEggCount() > 0) handleEggCollect(viewer);
+        // filler / status / out-of-range clicks: no-op (cancelled by listener)
     }
 
     private void handleParent(Player viewer, int slotIndex, boolean shift) {
@@ -149,10 +168,19 @@ public class DaycareMenu implements HatcheryMenu {
         Pokemon existing = pair[slotIndex];
 
         if (existing != null) {
-            // Retrieve back to owner's party
             if (shift) {
                 if (!viewer.getUniqueId().equals(daycare.getOwner())) {
                     viewer.sendMessage("§cOnly the daycare owner can retrieve Pokemon.");
+                    return;
+                }
+                if (plugin.getPixelmonHook().hasPokemonInParty(viewer, existing)) {
+                    pair[slotIndex] = null;
+                    daycare.setPairJson(pair[0] == null && pair[1] == null
+                            ? null
+                            : PokemonNbtCodec.encodePair(pair[0], pair[1]));
+                    plugin.getStorage().saveDaycare(daycare);
+                    viewer.sendMessage("§eThat Pokemon was already in your party, so the daycare copy was cleared.");
+                    rebuild();
                     return;
                 }
                 if (plugin.getPixelmonHook().addToParty(viewer, existing)) {
@@ -171,7 +199,6 @@ public class DaycareMenu implements HatcheryMenu {
                 viewer.sendMessage("§cOnly the daycare owner can add Pokemon.");
                 return;
             }
-            // Open party picker for this slot
             PartyPickerMenu.open(plugin, viewer, daycare, slotIndex);
         }
     }
@@ -199,7 +226,6 @@ public class DaycareMenu implements HatcheryMenu {
         rebuild();
     }
 
-    /** Called by submenu after a parent is selected. */
     public void setParent(int slotIndex, Pokemon p) {
         Pokemon[] pair = PokemonNbtCodec.decodePair(daycare.getPairJson());
         pair[slotIndex] = p;

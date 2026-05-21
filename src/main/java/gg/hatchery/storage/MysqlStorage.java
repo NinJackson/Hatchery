@@ -63,6 +63,7 @@ public class MysqlStorage implements Storage {
             ps.setInt   (9, d.getEggCount());
             ps.setString(10, d.getPairJson());
             ps.executeUpdate();
+            d.clearDirty();
         } catch (Exception e) {
             plugin.getLogger().warning("Failed to save daycare " + d.getId() + ": " + e.getMessage());
         }
